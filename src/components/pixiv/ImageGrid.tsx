@@ -1,7 +1,7 @@
 import { Box, Dialog, Grid, Typography } from '@mui/material'
 import { useState } from 'react'
-import { PixivIllust } from '../model/pixiv'
-import { Img } from './styledEl'
+import { PixivIllust } from '../../model/pixiv'
+import { Img } from '../styledEl'
 import { ImageViewer } from './ImageViewer'
 
 export const srcByUrl = (url: string, size?: number, crop_to_center = true) => {

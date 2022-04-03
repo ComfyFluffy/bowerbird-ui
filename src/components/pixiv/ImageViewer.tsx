@@ -10,11 +10,11 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { srcByUrl } from './ImageGrid'
-import { A, Img } from './styledEl'
-import { PixivIllust, PixivUser } from '../model/pixiv'
+import { A, Img } from '../styledEl'
+import { PixivIllust, PixivUser } from '../../model/pixiv'
 import { useMemo } from 'react'
 import sanitizeHtml from 'sanitize-html'
-import { usePost } from '../utils/network'
+import { usePost } from '../../utils/network'
 export const ImageViewer = ({
   illust,
   onClose,
@@ -37,6 +37,7 @@ export const ImageViewer = ({
 
   const { data: user } = usePost<PixivUser[]>('/api/v1/pixiv/find/user', {
     ids: [illust?.parent_id],
+    limit: 1,
   })
   const userHistory = user && user[0].history[0]
   return (

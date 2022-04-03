@@ -2,6 +2,7 @@ import {
   Autocomplete,
   autocompleteClasses,
   Box,
+  CircularProgress,
   Container,
   FormControl,
   FormControlLabel,
@@ -18,34 +19,78 @@ import AdapterDateFns from '@mui/lab/AdapterDateFns'
 import { useEffect, useState } from 'react'
 import { Tag } from '../model/base'
 import { ObjectId } from 'bson'
-import { PixivIllust } from '../model/pixiv'
-import { ImgGrid } from '../components/ImageGrid'
+import { PixivIllust, PixivUser } from '../model/pixiv'
+import { ImgGrid } from '../components/pixiv/ImageGrid'
 import { post, usePost } from '../utils/network'
 
-const AutocompleteTags = ({
+interface AutocompleteProps<T> {
+  value: T[]
+  onChange: (newValue: T[]) => void
+}
+
+const AutocompleteTags = ({ value, onChange }: AutocompleteProps<Tag>) => {
+  return (
+    <AutocompleteOnTyping
+      url="/api/v1/pixiv/find/tag"
+      value={value}
+      onChange={onChange}
+      label="Tags"
+      placeholder="Tags"
+      isOptionEqualToValue={(a, b) => a._id.equals(b._id)}
+      getOptionLabel={(option) => option.alias.join(' / ')}
+    />
+  )
+}
+
+const AutocompleteUsers = ({
   value,
   onChange,
+}: AutocompleteProps<PixivUser>) => {
+  return (
+    <AutocompleteOnTyping
+      url="/api/v1/pixiv/find/user"
+      value={value}
+      onChange={onChange}
+      label="Users"
+      placeholder="Users"
+      isOptionEqualToValue={(a, b) => a._id.equals(b._id)}
+      getOptionLabel={(option) =>
+        option.history[0] ? option.history[0].extension.name : option.source_id
+      }
+    />
+  )
+}
+
+const AutocompleteOnTyping = <T,>({
+  value,
+  onChange,
+  label,
+  placeholder,
+  isOptionEqualToValue,
+  getOptionLabel,
+  url,
 }: {
-  value: Tag[]
-  onChange: (newValue: Tag[]) => void
+  value: T[]
+  onChange: (newValue: T[]) => void
+  label: string
+  placeholder: string
+  isOptionEqualToValue: (a: T, b: T) => boolean
+  getOptionLabel: (option: T) => string
+  url: string
 }) => {
   const [search, setSearch] = useState('')
-  const { data: tags } = usePost<Tag[]>(
-    search === '' ? null : '/api/v1/pixiv/find/tag',
-    {
-      search,
-      limit: 100,
-    }
-  )
+  const { data } = usePost<T[]>(search === '' ? null : url, {
+    search,
+    limit: 100,
+  })
 
   return (
     <Autocomplete
       renderInput={(params) => (
-        <TextField {...params} label="Tags" placeholder="Tag" />
+        <TextField {...params} label={label} placeholder={placeholder} />
       )}
-      loading={!tags && search !== ''}
-      options={tags || []}
-      getOptionLabel={(option) => option.alias.join(' / ')}
+      loading={!data && search !== ''}
+      options={data || []}
       multiple
       value={value}
       onInputChange={(_, newInputValue) => {
@@ -55,7 +100,8 @@ const AutocompleteTags = ({
       sx={{
         width: 0.95,
       }}
-      isOptionEqualToValue={(a, b) => a._id.equals(b._id)}
+      getOptionLabel={getOptionLabel}
+      isOptionEqualToValue={isOptionEqualToValue}
     />
   )
 }
@@ -204,6 +250,7 @@ const SortByPicker = ({
 
 export const FindPixivIllust = () => {
   const [tags, setTags] = useState([] as Tag[])
+  const [users, setUsers] = useState([] as PixivUser[])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
@@ -214,10 +261,6 @@ export const FindPixivIllust = () => {
   const [sort, setSort] = useState<SortOptions>({ _id: -1 })
   const [data, setData] = useState<PixivIllust[]>()
 
-  const tagIds = tags.map((t) => t._id)
-  if (tagIds.length === 0) {
-    tagIds.push(new ObjectId('5f290463a7fe4ae39a0d0877'))
-  }
   // data =
   //   data &&
   //   data.filter((m) => m.history[m.history.length - 1]?.extension.image_urls[0])
@@ -233,6 +276,11 @@ export const FindPixivIllust = () => {
   useEffect(() => {
     setPage(1)
     setData(undefined)
+
+    const tagIds = tags.map((t) => t._id)
+    if (tagIds.length === 0) {
+      tagIds.push(new ObjectId('5f290463a7fe4ae39a0d0877'))
+    }
     ;(async () => {
       setData(
         await post<PixivIllust[]>('/api/v1/pixiv/find/illust', {
@@ -241,10 +289,11 @@ export const FindPixivIllust = () => {
           date_range: dateRange,
           bookmark_range: bookmarkRange,
           sort_by: sort,
+          parent_ids: users.map((u) => u._id),
         })
       )
     })()
-  }, [tags, search, dateRange, bookmarkRange, sort])
+  }, [tags, search, dateRange, bookmarkRange, sort, users])
 
   return (
     <Container maxWidth="xl" sx={{ pt: 4 }}>
@@ -253,7 +302,12 @@ export const FindPixivIllust = () => {
           value={tags}
           onChange={(t) => {
             setTags(t)
-            setPage(1)
+          }}
+        />
+        <AutocompleteUsers
+          value={users}
+          onChange={(u) => {
+            setUsers(u)
           }}
         />
         <TextField
@@ -271,18 +325,22 @@ export const FindPixivIllust = () => {
         />
         <SortByPicker onChange={setSort} />
         {data ? (
-          <>
-            <ImgGrid illusts={data.slice((page - 1) * 30, page * 30)} />
-            <Pagination
-              count={Math.floor(data.length / 30) + 1}
-              color="secondary"
-              page={page}
-              onChange={(_, page) => setPage(page)}
-              sx={{ mb: 2, mt: 2 }}
-            />
-          </>
+          data.length ? (
+            <>
+              <ImgGrid illusts={data.slice((page - 1) * 30, page * 30)} />
+              <Pagination
+                count={Math.floor(data.length / 30) + 1}
+                color="secondary"
+                page={page}
+                onChange={(_, page) => setPage(page)}
+                sx={{ mb: 2, mt: 2 }}
+              />
+            </>
+          ) : (
+            'No result'
+          )
         ) : (
-          'loading'
+          <CircularProgress />
         )}
       </Stack>
     </Container>
