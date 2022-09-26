@@ -7,9 +7,13 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:5000',
+        target: 'http://be:5000',
         // rewrite: (path) => path.replace(/^\/api/, ''),
       },
+    },
+    watch: {
+      // use polling to make reloading work in docker
+      usePolling: true,
     },
   },
 })

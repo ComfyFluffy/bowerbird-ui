@@ -2,13 +2,16 @@ import {
   Autocomplete,
   autocompleteClasses,
   Box,
+  Button,
   CircularProgress,
+  Collapse,
   Container,
   FormControl,
   FormControlLabel,
   Pagination,
   Radio,
   RadioGroup,
+  Rating,
   Stack,
   SxProps,
   TextField,
@@ -16,13 +19,14 @@ import {
 } from '@mui/material'
 import { LocalizationProvider, DateTimePicker } from '@mui/lab'
 import AdapterDateFns from '@mui/lab/AdapterDateFns'
-import { useEffect, useState } from 'react'
-import { Tag } from '../model/base'
-import { ObjectId } from 'bson'
-import { PixivIllust, PixivUser } from '../model/pixiv'
-import { ImgGrid } from '../components/pixiv/ImageGrid'
-import { post, usePost } from '../utils/network'
-
+import { useEffect, useRef, useState } from 'react'
+import { Tag } from '../../../model/base'
+import { PixivIllust, PixivUser } from '../../../model/pixiv'
+import { ImgGrid } from '../../../components/pixiv/ImageGrid'
+import { usePost } from '../../../utils/network'
+import axios from 'axios'
+import FilterListIcon from '@mui/icons-material/FilterList'
+import { useRatingStore } from '../../../utils/store'
 interface AutocompleteProps<T> {
   value: T[]
   onChange: (newValue: T[]) => void
@@ -31,12 +35,12 @@ interface AutocompleteProps<T> {
 const AutocompleteTags = ({ value, onChange }: AutocompleteProps<Tag>) => {
   return (
     <AutocompleteOnTyping
-      url="/api/v1/pixiv/find/tag"
+      url="/api/v2/pixiv/find/tag/search"
       value={value}
       onChange={onChange}
       label="Tags"
       placeholder="Tags"
-      isOptionEqualToValue={(a, b) => a._id.equals(b._id)}
+      isOptionEqualToValue={(a, b) => a.id === b.id}
       getOptionLabel={(option) => option.alias.join(' / ')}
     />
   )
@@ -53,9 +57,9 @@ const AutocompleteUsers = ({
       onChange={onChange}
       label="Users"
       placeholder="Users"
-      isOptionEqualToValue={(a, b) => a._id.equals(b._id)}
+      isOptionEqualToValue={(a, b) => a.id === b.id}
       getOptionLabel={(option) =>
-        option.history[0] ? option.history[0].extension.name : option.source_id
+        option.history ? option.history.extension.name : option.source_id
       }
     />
   )
@@ -81,13 +85,19 @@ const AutocompleteOnTyping = <T,>({
   const [search, setSearch] = useState('')
   const { data } = usePost<T[]>(search === '' ? null : url, {
     search,
+    offset: 0,
     limit: 100,
   })
 
   return (
     <Autocomplete
       renderInput={(params) => (
-        <TextField {...params} label={label} placeholder={placeholder} />
+        <TextField
+          {...params}
+          label={label}
+          placeholder={placeholder}
+          size="small"
+        />
       )}
       loading={!data && search !== ''}
       options={data || []}
@@ -146,6 +156,7 @@ const NumberRangePicker = ({
           onChange({ start: +e.target.value || 0, end: +end || 0 })
         }}
         type="number"
+        size="small"
       />
       <TextField
         label={`${label} To`}
@@ -155,6 +166,7 @@ const NumberRangePicker = ({
           onChange({ start: +start || 0, end: +e.target.value || 0 })
         }}
         type="number"
+        size="small"
       />
     </Box>
   )
@@ -173,20 +185,20 @@ const DateRangePicker = ({
       <Box sx={rangeContainerStyle}>
         <DateTimePicker
           clearable
-          renderInput={(props) => <TextField {...props} />}
+          renderInput={(props: any) => <TextField {...props} />}
           label="Date From"
           value={start}
-          onChange={(newValue) => {
+          onChange={(newValue: Date | null) => {
             setStart(newValue)
             onChange({ start: newValue, end })
           }}
         />
         <DateTimePicker
           clearable
-          renderInput={(props) => <TextField {...props} />}
+          renderInput={(props: any) => <TextField {...props} />}
           label="Date To"
           value={end}
-          onChange={(newValue) => {
+          onChange={(newValue: Date | null) => {
             setEnd(newValue)
             onChange({ start, end: newValue })
           }}
@@ -257,87 +269,125 @@ export const FindPixivIllust = () => {
     null,
     null,
   ])
-  const [bookmarkRange, setBookmarkRange] = useState<[number, number]>([0, 0])
+  const [bookmarkRange, setBookmarkRange] = useState<
+    [number | null, number | null]
+  >([null, null])
   const [sort, setSort] = useState<SortOptions>({ _id: -1 })
   const [data, setData] = useState<PixivIllust[]>()
 
-  // data =
-  //   data &&
-  //   data.filter((m) => m.history[m.history.length - 1]?.extension.image_urls[0])
+  const [rating, setRating] = useState<number | null>(null)
 
-  // const { data } = usePost<PixivIllust[]>('/api/v1/pixiv/find/illust', {
-  //   tags: tagIds,
-  //   search: search || null,
-  //   date_range: dateRange,
-  //   bookmark_range: bookmarkRange,
-  //   sort_by: sort,
-  // })
+  const [showFilter, setShowFilter] = useState(false)
+
+  const imgGridRef = useRef<HTMLDivElement>(null)
+
+  const ratingById = useRatingStore((s) => s.ratingById)
 
   useEffect(() => {
     setPage(1)
     setData(undefined)
 
-    const tagIds = tags.map((t) => t._id)
-    if (tagIds.length === 0) {
-      tagIds.push(new ObjectId('5f290463a7fe4ae39a0d0877'))
-    }
+    const tagIds = tags.map((t) => t.id)
+    tagIds.push(154)
     ;(async () => {
       setData(
-        await post<PixivIllust[]>('/api/v1/pixiv/find/illust', {
-          tags: tagIds,
-          search: search || null,
-          date_range: dateRange,
-          bookmark_range: bookmarkRange,
-          sort_by: sort,
-          parent_ids: users.map((u) => u._id),
-        })
+        (
+          await axios.post<PixivIllust[]>('/api/v2/pixiv/find/illust', {
+            tags: tagIds,
+            search: search || null,
+            date_range: dateRange,
+            bookmark_range: [
+              bookmarkRange[0] || null,
+              bookmarkRange[1] || null,
+            ],
+            // sort_by: sort,
+            parent_ids: users.map((u) => u.id),
+            offset: 0,
+            limit: 1000,
+          })
+        ).data.filter((v) => !rating || ratingById[v.id] === rating)
       )
     })()
-  }, [tags, search, dateRange, bookmarkRange, sort, users])
+  }, [tags, search, dateRange, bookmarkRange, sort, users, rating])
+  const filter = (
+    <Stack spacing={2} sx={{ alignItems: 'center', width: 1 }}>
+      <AutocompleteTags
+        value={tags}
+        onChange={(t) => {
+          setTags(t)
+        }}
+      />
+      <AutocompleteUsers
+        value={users}
+        onChange={(u) => {
+          setUsers(u)
+        }}
+      />
+      <TextField
+        placeholder="Search"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        sx={{ maxWidth: 592, width: 0.95 }}
+        size="small"
+      />
+      {/* <DateRangePicker onChange={(ra) => setDateRange([ra.start, ra.end])} /> */}
+      <NumberRangePicker
+        onChange={(newValue) =>
+          setBookmarkRange([newValue.start, newValue.end])
+        }
+        label="Bookmark"
+      />
+      <Rating
+        title="Rating"
+        value={rating}
+        onChange={(_, v) => {
+          setRating(v)
+        }}
+      />
+    </Stack>
+  )
 
   return (
-    <Container maxWidth="xl" sx={{ pt: 4 }}>
-      <Stack gap={2} sx={{ alignItems: 'center' }}>
-        <AutocompleteTags
-          value={tags}
-          onChange={(t) => {
-            setTags(t)
+    <Container maxWidth={false} sx={{ pt: 8 }}>
+      <Stack spacing={2} sx={{ alignItems: 'center' }}>
+        <Stack
+          sx={{
+            width: 1,
           }}
-        />
-        <AutocompleteUsers
-          value={users}
-          onChange={(u) => {
-            setUsers(u)
-          }}
-        />
-        <TextField
-          placeholder="Search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{ width: { xs: 0.95, sm: 592 } }}
-        />
-        <DateRangePicker onChange={(ra) => setDateRange([ra.start, ra.end])} />
-        <NumberRangePicker
-          onChange={(newValue) =>
-            setBookmarkRange([newValue.start, newValue.end])
-          }
-          label="Bookmark"
-        />
-        <SortByPicker onChange={setSort} />
+          spacing={2}
+        >
+          <Button
+            startIcon={<FilterListIcon />}
+            onClick={() => setShowFilter(!showFilter)}
+          >
+            Filter
+          </Button>
+          <Collapse in={showFilter}>{filter}</Collapse>
+        </Stack>
         {data ? (
           data.length ? (
             <>
-              <ImgGrid illusts={data.slice((page - 1) * 30, page * 30)} />
+              <Box
+                ref={imgGridRef}
+                sx={{
+                  width: 1,
+                }}
+              >
+                <ImgGrid illusts={data.slice((page - 1) * 30, page * 30)} />
+              </Box>
               <Pagination
                 count={Math.floor(data.length / 30) + 1}
                 color="secondary"
                 page={page}
-                onChange={(_, page) => setPage(page)}
+                onChange={(_, page) => {
+                  setPage(page)
+                  imgGridRef.current?.scrollIntoView()
+                }}
                 sx={{ mb: 2, mt: 2 }}
               />
             </>
           ) : (
-            'No result'
+            <Box>No result</Box>
           )
         ) : (
           <CircularProgress />

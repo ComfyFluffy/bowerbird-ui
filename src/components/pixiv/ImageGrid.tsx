@@ -3,18 +3,19 @@ import { useState } from 'react'
 import { PixivIllust } from '../../model/pixiv'
 import { Img } from '../styledEl'
 import { ImageViewer } from './ImageViewer'
+import { useZoomStore } from '../../utils/store'
 
-export const srcByUrl = (url: string, size?: number, crop_to_center = true) => {
-  const params: any = {
-    url,
-  }
-  if (size !== undefined) {
-    params.size = size.toString()
-    params.crop_to_center = crop_to_center
-  }
-
-  return `/api/v1/pixiv/media-by-url?${new URLSearchParams(params)}`
-}
+export const srcByPath = (
+  path?: string | null,
+  size?: number,
+  crop_to_center = true
+) =>
+  size
+    ? `/api/v2/pixiv/thumbnail/${path}?${new URLSearchParams({
+        size: size.toString(),
+        crop_to_center: crop_to_center.toString(),
+      })}`
+    : `/api/v2/pixiv/storage/${path}`
 
 export const ImgGrid = ({ illusts }: { illusts: PixivIllust[] }) => {
   const [showViewer, setShowViewer] = useState(false)
@@ -26,28 +27,21 @@ export const ImgGrid = ({ illusts }: { illusts: PixivIllust[] }) => {
   }
   const handleViewerClose = () => setShowViewer(false)
 
+  const columns = useZoomStore((state) => state.zoomBreakpoints)
+
   return (
     <>
-      <Dialog
-        open={showViewer}
-        onClose={handleViewerClose}
-        maxWidth="lg"
-        fullScreen
-      >
+      <Dialog open={showViewer} onClose={handleViewerClose} maxWidth="lg">
         {viewerIllust && (
           <ImageViewer illust={viewerIllust} onClose={handleViewerClose} />
         )}
       </Dialog>
-      <Grid
-        container
-        columns={{ xl: 12, sm: 6, xs: 4, md: 8, lg: 10 }}
-        sx={{ userSelect: 'none' }}
-      >
+      <Grid container columns={columns} sx={{ userSelect: 'none', width: 1 }}>
         {illusts.map((c, i) => {
-          const h = c.history[c.history.length - 1]
-          const pages = h.extension.image_urls.length
+          const h = c.history
+          const pages = h.extension.image_paths?.length ?? 0
           return (
-            <Grid item xs={2} key={i}>
+            <Grid item xs={1} key={i}>
               <Box
                 sx={{
                   justifyContent: 'center',
@@ -86,7 +80,7 @@ export const ImgGrid = ({ illusts }: { illusts: PixivIllust[] }) => {
                     </Box>
                   )}
                   <Img
-                    src={srcByUrl(h.extension.image_urls[0], 512)}
+                    src={srcByPath(h.extension.image_paths?.at(0), 512)}
                     title={h.extension.title}
                     sx={{
                       maxWidth: '100%',

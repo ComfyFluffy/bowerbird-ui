@@ -36,9 +36,8 @@ export interface PixivIllustHistory {
   illust_type: string
   caption_html: string
   title: string
-  image_urls: string[]
   date?: Date
-  ugoira_delay?: number[]
+  image_paths?: (string | null)[]
 }
 
 export interface PixivNovelHistory {
@@ -50,9 +49,9 @@ export interface PixivNovelHistory {
   date?: Date
 }
 
-import { ImageMedia, Item, LocalMedia } from './base'
+import { Item } from './base'
 
 export type PixivIllust = Item<PixivWorksExt, PixivIllustHistory>
 export type PixivNovel = Item<PixivWorksExt, PixivNovelHistory>
 export type PixivUser = Item<PixivUser, PixivUserHistory>
-export type PixivImage = LocalMedia<ImageMedia>
+// export type PixivImage = LocalMedia<ImageMedia>

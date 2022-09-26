@@ -1,6 +1,29 @@
-import { createTheme } from '@mui/material'
+import { createTheme, ThemeOptions } from '@mui/material'
 
-export const lightTheme = createTheme({})
+const baseTheme: ThemeOptions = {
+  components: {
+    MuiButtonBase: {
+      defaultProps: {
+        disableRipple: true,
+      },
+    },
+    MuiCircularProgress: {
+      defaultProps: {
+        disableShrink: true,
+        thickness: 4,
+      },
+      styleOverrides: {
+        root: {
+          animationDuration: '550ms',
+        },
+      },
+    },
+  },
+}
+
+export const lightTheme = createTheme({
+  ...baseTheme,
+})
 
 export const darkTheme = createTheme({
   palette: {
@@ -23,5 +46,9 @@ export const darkTheme = createTheme({
     success: {
       main: '#66bb6a',
     },
+    background: {
+      default: '#000',
+    },
   },
+  ...baseTheme,
 })
