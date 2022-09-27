@@ -14,7 +14,7 @@ const baseTheme: ThemeOptions = {
       },
       styleOverrides: {
         root: {
-          animationDuration: '550ms',
+          animationDuration: '700ms',
         },
       },
     },
@@ -45,9 +45,6 @@ export const darkTheme = createTheme({
     },
     success: {
       main: '#66bb6a',
-    },
-    background: {
-      default: '#000',
     },
   },
   ...baseTheme,

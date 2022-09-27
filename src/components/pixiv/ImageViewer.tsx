@@ -1,12 +1,19 @@
 import {
   Box,
+  Button,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
   IconButton,
   ListItemIcon,
   Menu,
   MenuItem,
   Rating,
   Stack,
+  TextField,
   ThemeProvider,
   Typography,
   useTheme,
@@ -14,15 +21,129 @@ import {
 import { srcByPath } from './ImageGrid'
 import { A, Img } from '../styledEl'
 import { PixivIllust } from '../../model/pixiv'
-import { useMemo, useRef, useState } from 'react'
+import { MouseEvent, useMemo, useRef, useState } from 'react'
 import sanitizeHtml from 'sanitize-html'
 import CloseIcon from '@mui/icons-material/Close'
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import LibraryAddIcon from '@mui/icons-material/LibraryAdd'
-import { useRatingStore } from '../../utils/store'
+import { useCollectionStore, useRatingStore } from '../../utils/store'
 import shallow from 'zustand/shallow'
 import { darkTheme } from '../../theme'
 import { useOnTop } from '../../utils/hooks'
+import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark'
+const AddToCollection = ({ illust }: { illust: PixivIllust }) => {
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
+  const menuOpen = Boolean(menuAnchor)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const closeMenu = () => setMenuAnchor(null)
+  const openMenu = (event: MouseEvent<HTMLButtonElement>) => {
+    setMenuAnchor(event.currentTarget)
+  }
+
+  const [collections, updateCollection] = useCollectionStore(
+    (s) => [s.collections, s.updateCollection],
+    shallow
+  )
+
+  const [newCollectionName, setNewCollectionName] = useState('')
+  const [error, setError] = useState('')
+
+  const collectionDuplicate = (name: string) => {
+    if (
+      Object.keys(collections)
+        .map((k) => k.toLowerCase())
+        .includes(name.toLowerCase())
+    ) {
+      setError('Collection already exists')
+      return true
+    }
+    setError('')
+    return false
+  }
+
+  return (
+    <>
+      <IconButton title="Add to Collection..." onClick={openMenu}>
+        <CollectionsBookmarkIcon />
+      </IconButton>
+      <Menu anchorEl={menuAnchor} open={menuOpen} onClose={closeMenu}>
+        {Object.entries(collections).map(([name, ids]) => (
+          <MenuItem
+            key={name}
+            onClick={() => {
+              updateCollection(name, [...new Set([...ids, illust.id])])
+              closeMenu()
+            }}
+          >
+            {name}
+          </MenuItem>
+        ))}
+        <Divider />
+        <MenuItem
+          onClick={() => {
+            setDialogOpen(true)
+          }}
+        >
+          <ListItemIcon>
+            <LibraryAddIcon />
+          </ListItemIcon>
+          New Collection...
+        </MenuItem>
+      </Menu>
+      <Dialog
+        open={dialogOpen}
+        onClose={() => {
+          if (!newCollectionName) {
+            setDialogOpen(false)
+          }
+        }}
+      >
+        <DialogTitle>New Collection</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            label="Name"
+            sx={{
+              width: 8 * 32,
+              maxWidth: '100%',
+              mt: 1,
+            }}
+            value={newCollectionName}
+            onChange={(e) => {
+              collectionDuplicate(e.target.value)
+              setNewCollectionName(e.target.value)
+            }}
+            error={!!error}
+            helperText={error}
+            required
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setDialogOpen(false)
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              if (!newCollectionName) {
+                setError('Collection name is required')
+                return
+              }
+              if (collectionDuplicate(newCollectionName)) {
+                return
+              }
+              updateCollection(newCollectionName, [illust.id])
+            }}
+          >
+            Create and Add
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  )
+}
 
 export const ImageViewer = ({
   illust,
@@ -31,20 +152,10 @@ export const ImageViewer = ({
   illust: PixivIllust
   onClose: () => void
 }) => {
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
-  const menuOpen = Boolean(menuAnchor)
-  const onMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setMenuAnchor(event.currentTarget)
-  }
-
   const [ratingById, setRating] = useRatingStore(
     (state) => [state.ratingById, state.setRating],
     shallow
   )
-  const onMenuClose = () => {
-    setMenuAnchor(null)
-  }
-
   const h = illust.history
 
   const images =
@@ -55,28 +166,15 @@ export const ImageViewer = ({
     })) || []
 
   const cleanCaptionHtml = useMemo(
-    () => sanitizeHtml(h.extension.caption_html),
+    () =>
+      sanitizeHtml(h.extension.caption_html, {
+        allowedTags: ['p', 'br', 'a', 'b', 'i', 'u', 's', 'strong', 'em'],
+      }),
     [illust]
   )
   const containerRef = useRef<HTMLDivElement>(null)
   const onTop = useOnTop(() => containerRef.current?.parentElement)
 
-  // const { data: user } = usePost<PixivUser[]>('/api/v1/pixiv/find/user', {
-  //   ids: [illust?.parent_id],
-  //   limit: 1,
-  // })
-  // const userHistory = user && user[0].history
-
-  const menu = (
-    <Menu open={menuOpen} anchorEl={menuAnchor} onClose={onMenuClose}>
-      <MenuItem onClick={onMenuClose}>
-        <ListItemIcon>
-          <LibraryAddIcon />
-        </ListItemIcon>
-        Add to Collection...
-      </MenuItem>
-    </Menu>
-  )
   const theme = useTheme()
 
   return (
@@ -132,11 +230,8 @@ export const ImageViewer = ({
                 }}
               />
               <Box sx={{ flex: 1 }} />
-              <IconButton onClick={onMenuOpen}>
-                <MoreHorizIcon />
-              </IconButton>
-              {menu}
-              <IconButton onClick={onClose}>
+              <AddToCollection illust={illust} />
+              <IconButton onClick={onClose} title="Close">
                 <CloseIcon />
               </IconButton>
             </Stack>
@@ -181,9 +276,16 @@ export const ImageViewer = ({
             <span dangerouslySetInnerHTML={{ __html: cleanCaptionHtml }} />
           </Typography>
         )}
-        <Stack spacing={1} alignItems="center">
+        <Stack spacing={2} alignItems="center">
           {images.map((i) => (
-            <A href={i.original} target="_blank" key={i.original}>
+            <A
+              href={i.original}
+              target="_blank"
+              key={i.original}
+              sx={{
+                display: 'flex',
+              }}
+            >
               <Img
                 src={i.large}
                 sx={{ maxHeight: '85vh', maxWidth: 1 }}

@@ -26,7 +26,8 @@ import { ImgGrid } from '../../../components/pixiv/ImageGrid'
 import { usePost } from '../../../utils/network'
 import axios from 'axios'
 import FilterListIcon from '@mui/icons-material/FilterList'
-import { useRatingStore } from '../../../utils/store'
+import { useCollectionStore, useRatingStore } from '../../../utils/store'
+import shallow from 'zustand/shallow'
 interface AutocompleteProps<T> {
   value: T[]
   onChange: (newValue: T[]) => void
@@ -283,6 +284,11 @@ export const FindPixivIllust = () => {
 
   const ratingById = useRatingStore((s) => s.ratingById)
 
+  const [collections, currentCollection] = useCollectionStore(
+    (s) => [s.collections, s.current],
+    shallow
+  )
+
   useEffect(() => {
     setPage(1)
     setData(undefined)
@@ -293,13 +299,17 @@ export const FindPixivIllust = () => {
       setData(
         (
           await axios.post<PixivIllust[]>('/api/v2/pixiv/find/illust', {
-            tags: tagIds,
+            tags: tagIds.length ? tagIds : null,
             search: search || null,
             date_range: dateRange,
             bookmark_range: [
               bookmarkRange[0] || null,
               bookmarkRange[1] || null,
             ],
+            ids:
+              currentCollection === null
+                ? null
+                : collections[currentCollection],
             // sort_by: sort,
             parent_ids: users.map((u) => u.id),
             offset: 0,
@@ -308,7 +318,16 @@ export const FindPixivIllust = () => {
         ).data.filter((v) => !rating || ratingById[v.id] === rating)
       )
     })()
-  }, [tags, search, dateRange, bookmarkRange, sort, users, rating])
+  }, [
+    tags,
+    search,
+    dateRange,
+    bookmarkRange,
+    sort,
+    users,
+    rating,
+    currentCollection,
+  ])
   const filter = (
     <Stack spacing={2} sx={{ alignItems: 'center', width: 1 }}>
       <AutocompleteTags

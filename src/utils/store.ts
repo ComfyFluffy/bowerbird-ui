@@ -39,59 +39,32 @@ export const useZoomStore = create<ZoomStore>()(
   }))
 )
 
-export interface Collection {
-  id: number
-  name: string
-  items: number[]
-}
-
 export interface CollectionStore {
-  collections: Collection[]
-  current: number | null
-  setCurrent: (id: number | null) => void
-  addCollection: (name: string) => void
-  removeCollection: (id: number) => void
-  addCollectionItem: (id: number, item: number) => void
-  removeCollectionItem: (id: number, item: number) => void
+  collections: Record<string, number[]>
+  current: string | null
+  setCurrent: (name: string | null) => void
+  updateCollection: (name: string, ids: number[]) => void
+  removeCollection: (name: string) => void
 }
 
 export const useCollectionStore = create<CollectionStore>()(
   persist(
     immer((set) => ({
-      collections: [
-        {
-          id: 1,
-          name: 'Default',
-          items: [],
-        },
-      ],
+      collections: {
+        Default: [],
+      },
       current: null,
-      setCurrent: (id: number | null) => set((state) => (state.current = id)),
-      addCollection: (name) =>
+      setCurrent: (name) =>
         set((state) => {
-          state.collections.push({
-            id: state.collections.length,
-            name,
-            items: [],
-          })
+          state.current = name
+        }),
+      updateCollection: (name, ids) =>
+        set((state) => {
+          state.collections[name] = ids
         }),
       removeCollection: (id) =>
         set((state) => {
           delete state.collections[id]
-        }),
-      addCollectionItem: (id, item) =>
-        set((state) => {
-          const collection = state.collections.find((c) => c.id === id)
-          if (collection) {
-            collection.items.push(item)
-          }
-        }),
-      removeCollectionItem: (id, item) =>
-        set((state) => {
-          const collection = state.collections.find((c) => c.id === id)
-          if (collection) {
-            collection.items = collection.items.filter((i) => i !== item)
-          }
         }),
     })),
     {

@@ -80,14 +80,14 @@ const CollectionList = () => {
 
   return (
     <>
-      {collections.map((c) => (
-        <ListItem key={c.id} disablePadding>
+      {Object.keys(collections).map((c) => (
+        <ListItem key={c} disablePadding>
           <ListItemButton
-            selected={c.id === currentCollection}
-            onClick={() => setCurrentCollection(c.id)}
+            selected={c === currentCollection}
+            onClick={() => setCurrentCollection(c)}
           >
             <ListItemText
-              primary={c.name}
+              primary={c}
               sx={{
                 ml: 5,
               }}
