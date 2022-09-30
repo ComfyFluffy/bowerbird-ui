@@ -17,6 +17,34 @@ export const srcByPath = (
       })}`
     : `/api/v2/pixiv/storage/${path}`
 
+const PageCount = ({ pageCount }: { pageCount: number }) =>
+  pageCount > 1 ? (
+    <Box
+      sx={(t) => ({
+        position: 'absolute',
+        left: { xs: 4, sm: 8 },
+        top: { xs: 4, sm: 8 },
+        bgcolor: 'rgba(0,0,0,0.5)',
+        color: 'white',
+        backdropFilter: 'blur(2px)',
+        width: '1.5em',
+        height: '1.5em',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: t.shape.borderRadius === 0 ? undefined : '25%',
+      })}
+    >
+      <Typography
+        component="span"
+        variant="caption"
+        sx={{ lineHeight: 'unset' }}
+      >
+        {pageCount}
+      </Typography>
+    </Box>
+  ) : null
+
 export const ImgGrid = ({ illusts }: { illusts: PixivIllust[] }) => {
   const [showViewer, setShowViewer] = useState(false)
   const [viewerIllust, setViewerIllust] = useState<PixivIllust>()
@@ -38,8 +66,6 @@ export const ImgGrid = ({ illusts }: { illusts: PixivIllust[] }) => {
       </Dialog>
       <Grid container columns={columns} sx={{ userSelect: 'none', width: 1 }}>
         {illusts.map((c, i) => {
-          const h = c.history
-          const pages = h.extension.image_paths?.length ?? 0
           return (
             <Grid item xs={1} key={i}>
               <Box
@@ -52,36 +78,12 @@ export const ImgGrid = ({ illusts }: { illusts: PixivIllust[] }) => {
                 }}
               >
                 <Box sx={{ position: 'relative' }}>
-                  {pages > 1 && (
-                    <Box
-                      sx={(t) => ({
-                        position: 'absolute',
-                        left: { xs: 4, sm: 8 },
-                        top: { xs: 4, sm: 8 },
-                        bgcolor: 'rgba(0,0,0,0.5)',
-                        color: 'white',
-                        backdropFilter: 'blur(2px)',
-                        width: '1.5em',
-                        height: '1.5em',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius:
-                          t.shape.borderRadius === 0 ? undefined : '25%',
-                      })}
-                    >
-                      <Typography
-                        component="span"
-                        variant="caption"
-                        sx={{ lineHeight: 'unset' }}
-                      >
-                        {pages}
-                      </Typography>
-                    </Box>
-                  )}
+                  <PageCount
+                    pageCount={c.history.extension.image_paths?.length || 0}
+                  />
                   <Img
-                    src={srcByPath(h.extension.image_paths?.at(0), 512)}
-                    title={h.extension.title}
+                    src={srcByPath(c.history.extension.image_paths?.at(0), 512)}
+                    title={c.history.extension.title}
                     sx={{
                       maxWidth: '100%',
                       maxHeight: '100%',

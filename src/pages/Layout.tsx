@@ -22,7 +22,7 @@ import {
 } from '@mui/material'
 import { Outlet } from 'react-router-dom'
 import MenuIcon from '@mui/icons-material/Menu'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import ZoomInIcon from '@mui/icons-material/ZoomIn'
 import ZoomOutIcon from '@mui/icons-material/ZoomOut'
 import { Stack } from '@mui/system'
@@ -138,14 +138,18 @@ const CollaspeListItems = ({
 }
 
 export const Layout = () => {
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const theme = useTheme()
+  const upLg = useMediaQuery(theme.breakpoints.up('lg'))
+
+  const [drawerOpen, setDrawerOpen] = useState(upLg)
+
+  useEffect(() => {
+    setDrawerOpen(upLg)
+  }, [upLg])
 
   const handleSwitchDrawer = () => {
     setDrawerOpen(!drawerOpen)
   }
-
-  const theme = useTheme()
-  const upLg = useMediaQuery(theme.breakpoints.up('lg'))
 
   const [zoomLevel, zoomIn, zoomOut] = useZoomStore(
     (state) => [state.zoomLevel, state.zoomIn, state.zoomOut],

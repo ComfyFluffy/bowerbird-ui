@@ -20,7 +20,7 @@ import {
 import { LocalizationProvider, DateTimePicker } from '@mui/lab'
 import AdapterDateFns from '@mui/lab/AdapterDateFns'
 import { useEffect, useRef, useState } from 'react'
-import { Tag } from '../../../model/base'
+import { ItemsResponse, Tag } from '../../../model/base'
 import { PixivIllust, PixivUser } from '../../../model/pixiv'
 import { ImgGrid } from '../../../components/pixiv/ImageGrid'
 import { usePost } from '../../../utils/network'
@@ -262,6 +262,8 @@ const SortByPicker = ({
 }
 
 export const FindPixivIllust = () => {
+  const limit = 50
+
   const [tags, setTags] = useState([] as Tag[])
   const [users, setUsers] = useState([] as PixivUser[])
   const [search, setSearch] = useState('')
@@ -275,6 +277,7 @@ export const FindPixivIllust = () => {
   >([null, null])
   const [sort, setSort] = useState<SortOptions>({ _id: -1 })
   const [data, setData] = useState<PixivIllust[]>()
+  const [total, setTotal] = useState(0)
 
   const [rating, setRating] = useState<number | null>(null)
 
@@ -290,33 +293,33 @@ export const FindPixivIllust = () => {
   )
 
   useEffect(() => {
-    setPage(1)
     setData(undefined)
 
     const tagIds = tags.map((t) => t.id)
     tagIds.push(154)
     ;(async () => {
-      setData(
-        (
-          await axios.post<PixivIllust[]>('/api/v2/pixiv/find/illust', {
-            tags: tagIds.length ? tagIds : null,
-            search: search || null,
-            date_range: dateRange,
-            bookmark_range: [
-              bookmarkRange[0] || null,
-              bookmarkRange[1] || null,
-            ],
-            ids:
-              currentCollection === null
-                ? null
-                : collections[currentCollection],
-            // sort_by: sort,
-            parent_ids: users.map((u) => u.id),
-            offset: 0,
-            limit: 1000,
-          })
-        ).data.filter((v) => !rating || ratingById[v.id] === rating)
+      const r = await axios.post<ItemsResponse<PixivIllust>>(
+        '/api/v2/pixiv/find/illust',
+        {
+          tags: tagIds.length ? tagIds : null,
+          search: search || null,
+          date_range: dateRange,
+          bookmark_range: [bookmarkRange[0] || null, bookmarkRange[1] || null],
+          ids:
+            currentCollection === null ? null : collections[currentCollection],
+          // sort_by: sort,
+          parent_ids: users.map((u) => u.id),
+          offset: (page - 1) * limit,
+          limit,
+          tags_exclude: [13],
+        }
       )
+      setData(
+        rating
+          ? r.data.items.filter((v) => ratingById[v.id] === rating)
+          : r.data.items
+      )
+      setTotal(Math.floor(r.data.total / limit) + 1)
     })()
   }, [
     tags,
@@ -327,6 +330,7 @@ export const FindPixivIllust = () => {
     users,
     rating,
     currentCollection,
+    page,
   ])
   const filter = (
     <Stack spacing={2} sx={{ alignItems: 'center', width: 1 }}>
@@ -392,18 +396,20 @@ export const FindPixivIllust = () => {
                   width: 1,
                 }}
               >
-                <ImgGrid illusts={data.slice((page - 1) * 30, page * 30)} />
+                <ImgGrid illusts={data} />
               </Box>
-              <Pagination
-                count={Math.floor(data.length / 30) + 1}
-                color="secondary"
-                page={page}
-                onChange={(_, page) => {
-                  setPage(page)
-                  imgGridRef.current?.scrollIntoView()
-                }}
-                sx={{ mb: 2, mt: 2 }}
-              />
+              {total > limit && (
+                <Pagination
+                  count={total}
+                  color="secondary"
+                  page={page}
+                  onChange={(_, page) => {
+                    setPage(page)
+                    imgGridRef.current?.scrollIntoView()
+                  }}
+                  sx={{ mb: 2, mt: 2 }}
+                />
+              )}
             </>
           ) : (
             <Box>No result</Box>

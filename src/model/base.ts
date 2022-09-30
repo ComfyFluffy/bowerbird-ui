@@ -19,17 +19,23 @@ export interface Item<E, H> {
   tag_ids?: number[]
   source_id: string
   source_inaccessible: boolean
-  last_modified?: Date
+  inserted_at: string
+  updated_at: string
   history: History<H>
   extension?: E
 }
 
 export interface History<H> {
-  last_modified: Date
+  inserted_at: string
   extension: H
 }
 
 export interface Tag {
   id: number
   alias: string[]
+}
+
+export interface ItemsResponse<T> {
+  items: T[]
+  total: number
 }

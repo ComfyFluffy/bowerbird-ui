@@ -156,18 +156,20 @@ export const ImageViewer = ({
     (state) => [state.ratingById, state.setRating],
     shallow
   )
-  const h = illust.history
 
-  const images =
-    h.extension.image_paths?.map((v) => ({
-      original: srcByPath(v),
-      large: srcByPath(v, 1536, false),
-      small: srcByPath(v, 512),
-    })) || []
+  const images = useMemo(
+    () =>
+      illust.history.extension.image_paths?.map((v) => ({
+        original: srcByPath(v),
+        large: srcByPath(v, 1536, false),
+        small: srcByPath(v, 512),
+      })) || [],
+    [illust]
+  )
 
   const cleanCaptionHtml = useMemo(
     () =>
-      sanitizeHtml(h.extension.caption_html, {
+      sanitizeHtml(illust.history.extension.caption_html, {
         allowedTags: ['p', 'br', 'a', 'b', 'i', 'u', 's', 'strong', 'em'],
       }),
     [illust]
@@ -236,14 +238,14 @@ export const ImageViewer = ({
               </IconButton>
             </Stack>
           </Stack>
-          {h.extension.title && (
+          {illust.history.extension.title && (
             <Typography
               variant="h5"
               sx={(t) => ({
                 color: t.palette.text.primary,
               })}
             >
-              {h.extension.title}
+              {illust.history.extension.title}
             </Typography>
           )}
         </Stack>
@@ -288,7 +290,10 @@ export const ImageViewer = ({
             >
               <Img
                 src={i.large}
-                sx={{ maxHeight: '85vh', maxWidth: 1 }}
+                sx={{
+                  maxWidth: 1,
+                  maxHeight: '80vh',
+                }}
                 title="Click to view original image"
               />
             </A>

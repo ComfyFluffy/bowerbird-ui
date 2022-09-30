@@ -23,20 +23,25 @@ const computeZoom = (zoomLevel: number) => {
 }
 
 export const useZoomStore = create<ZoomStore>()(
-  immer((set) => ({
-    zoomLevel: 0,
-    zoomBreakpoints: defaultZoom,
-    zoomIn: () =>
-      set((state) => {
-        state.zoomLevel -= 1
-        state.zoomBreakpoints = computeZoom(state.zoomLevel)
-      }),
-    zoomOut: () =>
-      set((state) => {
-        state.zoomLevel += 1
-        state.zoomBreakpoints = computeZoom(state.zoomLevel)
-      }),
-  }))
+  persist(
+    immer((set) => ({
+      zoomLevel: 0,
+      zoomBreakpoints: defaultZoom,
+      zoomIn: () =>
+        set((state) => {
+          state.zoomLevel -= 1
+          state.zoomBreakpoints = computeZoom(state.zoomLevel)
+        }),
+      zoomOut: () =>
+        set((state) => {
+          state.zoomLevel += 1
+          state.zoomBreakpoints = computeZoom(state.zoomLevel)
+        }),
+    })),
+    {
+      name: 'zoom',
+    }
+  )
 )
 
 export interface CollectionStore {
