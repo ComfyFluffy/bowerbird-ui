@@ -36,7 +36,7 @@ interface AutocompleteProps<T> {
 const AutocompleteTags = ({ value, onChange }: AutocompleteProps<Tag>) => {
   return (
     <AutocompleteOnTyping
-      url="/api/v2/pixiv/find/tag/search"
+      url="/api/v2/pixiv/find/tag"
       value={value}
       onChange={onChange}
       label="Tags"
@@ -53,7 +53,7 @@ const AutocompleteUsers = ({
 }: AutocompleteProps<PixivUser>) => {
   return (
     <AutocompleteOnTyping
-      url="/api/v1/pixiv/find/user"
+      url="/api/v2/pixiv/user/find"
       value={value}
       onChange={onChange}
       label="Users"
@@ -87,7 +87,7 @@ const AutocompleteOnTyping = <T,>({
   const { data } = usePost<T[]>(search === '' ? null : url, {
     search,
     offset: 0,
-    limit: 100,
+    limit: 50,
   })
 
   return (
@@ -268,14 +268,14 @@ export const FindPixivIllust = () => {
   const [users, setUsers] = useState([] as PixivUser[])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
-    null,
-    null,
-  ])
+  // const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
+  //   null,
+  //   null,
+  // ])
   const [bookmarkRange, setBookmarkRange] = useState<
     [number | null, number | null]
   >([null, null])
-  const [sort, setSort] = useState<SortOptions>({ _id: -1 })
+  // const [sort, setSort] = useState<SortOptions>({ _id: -1 })
   const [data, setData] = useState<PixivIllust[]>()
   const [total, setTotal] = useState(0)
 
@@ -299,11 +299,11 @@ export const FindPixivIllust = () => {
     tagIds.push(154)
     ;(async () => {
       const r = await axios.post<ItemsResponse<PixivIllust>>(
-        '/api/v2/pixiv/find/illust',
+        '/api/v2/pixiv/illust/find',
         {
           tags: tagIds.length ? tagIds : null,
           search: search || null,
-          date_range: dateRange,
+          // date_range: dateRange,
           bookmark_range: [bookmarkRange[0] || null, bookmarkRange[1] || null],
           ids:
             currentCollection === null ? null : collections[currentCollection],
@@ -324,9 +324,9 @@ export const FindPixivIllust = () => {
   }, [
     tags,
     search,
-    dateRange,
+    // dateRange,
     bookmarkRange,
-    sort,
+    // sort,
     users,
     rating,
     currentCollection,

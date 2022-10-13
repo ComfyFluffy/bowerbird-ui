@@ -18,7 +18,7 @@ const App = () => {
           <Route path="/" element={<Layout />}>
             <Route index element={<FindPixivIllust />} />
             {/* <Route path="pixiv" element={<FindPixivIllust />} /> */}
-            <Route path="user/:id" element={<User />} />
+            <Route path="pixiv/user/:id" element={<User />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,4 +1,5 @@
 import {
+  Avatar,
   Box,
   Button,
   Container,
@@ -8,20 +9,26 @@ import {
   DialogTitle,
   Divider,
   IconButton,
+  Link,
   ListItemIcon,
   Menu,
   MenuItem,
+  Paper,
   Rating,
+  Skeleton,
   Stack,
+  styled,
   TextField,
   ThemeProvider,
+  Tooltip,
+  tooltipClasses,
+  TooltipProps,
   Typography,
   useTheme,
 } from '@mui/material'
-import { srcByPath } from './ImageGrid'
 import { A, Img } from '../styledEl'
-import { PixivIllust } from '../../model/pixiv'
-import { MouseEvent, useMemo, useRef, useState } from 'react'
+import { PixivIllust, PixivUser } from '../../model/pixiv'
+import { MouseEvent, ReactElement, useMemo, useRef, useState } from 'react'
 import sanitizeHtml from 'sanitize-html'
 import CloseIcon from '@mui/icons-material/Close'
 import LibraryAddIcon from '@mui/icons-material/LibraryAdd'
@@ -30,6 +37,8 @@ import shallow from 'zustand/shallow'
 import { darkTheme } from '../../theme'
 import { useOnTop } from '../../utils/hooks'
 import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark'
+import { srcByPath, usePost } from '../../utils/network'
+import { Link as RouterLink } from 'react-router-dom'
 const AddToCollection = ({ illust }: { illust: PixivIllust }) => {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
   const menuOpen = Boolean(menuAnchor)
@@ -145,6 +154,151 @@ const AddToCollection = ({ illust }: { illust: PixivIllust }) => {
   )
 }
 
+const UserCard = ({ user }: { user: PixivUser }) => {
+  const { data } = usePost<{ items: PixivIllust[] }>(
+    '/api/v2/pixiv/illust/find',
+    {
+      parent_ids: [user.id],
+      limit: 3,
+      offset: 0,
+    }
+  )
+  const illusts = data?.items
+
+  return (
+    <Stack spacing={1} component={Paper} elevation={12} sx={{ p: 1 }}>
+      <UserLink user={user} followButton disableTooltip />
+      <Stack
+        direction="row"
+        sx={{
+          width: 1,
+        }}
+        spacing={0.5}
+        justifyContent="center"
+      >
+        {illusts
+          ? illusts.map((illust) => (
+              <Box
+                key={illust.id}
+                sx={{
+                  height: 8 * 12,
+                  width: 8 * 12,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundImage: `url(${srcByPath(
+                    illust.history.extension.image_paths?.[0],
+                    200
+                  )})`,
+                  borderRadius: 1,
+                }}
+              />
+            ))
+          : [...Array(3).keys()].map((i) => (
+              <Skeleton
+                key={i}
+                variant="rectangular"
+                height={8 * 12}
+                width={8 * 12}
+              />
+            ))}
+      </Stack>
+    </Stack>
+  )
+}
+
+const StyledTooltip = styled(({ className, ...props }: TooltipProps) => (
+  <Tooltip {...props} classes={{ popper: className }} />
+))(() => ({
+  [`& .${tooltipClasses.tooltip}`]: {
+    padding: 0,
+  },
+}))
+
+const UserLink = ({
+  user,
+  followButton,
+  disableTooltip,
+}: {
+  user?: PixivUser
+  followButton?: boolean
+  disableTooltip?: boolean
+}) => {
+  if (!user) {
+    return (
+      <Stack direction="row" alignItems="center" spacing={2}>
+        <Skeleton variant="circular" width={40} height={40} />
+        <Skeleton variant="text" width={100} />
+      </Stack>
+    )
+  }
+
+  const to = `/pixiv/user/${user.id}`
+
+  const tooltip = (children: ReactElement) => (
+    <StyledTooltip title={<UserCard user={user} />}>{children}</StyledTooltip>
+  )
+
+  const avatar = (
+    <Avatar
+      src={
+        user.history.extension.avatar_path &&
+        srcByPath(user.history.extension.avatar_path)
+      }
+      sx={{
+        textDecoration: 'none',
+      }}
+      component={RouterLink}
+      to={to}
+    >
+      {user.history.extension.name[0]}
+    </Avatar>
+  )
+  const name = (
+    <Link
+      underline="hover"
+      color="inherit"
+      sx={{
+        fontWeight: 600,
+      }}
+      component={RouterLink}
+      to={to}
+    >
+      {user.history.extension.name}
+    </Link>
+  )
+  return (
+    <Stack spacing={2} direction="row" alignItems="center">
+      <Stack
+        spacing={1}
+        direction="row"
+        alignItems="center"
+        sx={{
+          flex: followButton ? 1 : undefined,
+        }}
+      >
+        {disableTooltip ? (
+          <>
+            {avatar}
+            {name}
+          </>
+        ) : (
+          <>
+            {tooltip(avatar)}
+            {tooltip(name)}
+          </>
+        )}
+      </Stack>
+      {followButton && (
+        <Button
+          size="small"
+          variant={user.extension?.is_followed ? 'outlined' : 'contained'}
+        >
+          {user.extension?.is_followed ? 'Unfollow' : 'Follow'}
+        </Button>
+      )}
+    </Stack>
+  )
+}
 export const ImageViewer = ({
   illust,
   onClose,
@@ -179,6 +333,15 @@ export const ImageViewer = ({
 
   const theme = useTheme()
 
+  const { data: userData } = usePost<PixivUser[]>('/api/v2/pixiv/user/find', {
+    ids: [illust.parent_id],
+    offset: 0,
+    limit: 50,
+  })
+  const user = userData?.[0]
+
+  // const [commentsOpen, setCommentsOpen] = useState(true)
+
   return (
     <Container
       maxWidth="lg"
@@ -193,15 +356,13 @@ export const ImageViewer = ({
           sx={{
             backgroundImage: onTop
               ? undefined
-              : 'linear-gradient(rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 55%, rgba(0,0,0,0.1) 80%, rgba(0,0,0,0) 100%)',
+              : 'linear-gradient(rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.22) 50%, rgba(0,0,0,0.05) 80%, rgba(0,0,0,0) 100%)',
             position: 'sticky',
             top: 0,
             left: 0,
             right: 0,
-            pl: 2,
-            pr: 2,
+            p: 2,
             pt: 0,
-            pb: 5,
             '& *': {
               transition: 'color 50ms',
             },
@@ -209,6 +370,7 @@ export const ImageViewer = ({
             '& span, button': {
               pointerEvents: 'auto',
             },
+            zIndex: 10,
           }}
         >
           <Stack
@@ -238,6 +400,15 @@ export const ImageViewer = ({
               </IconButton>
             </Stack>
           </Stack>
+        </Stack>
+      </ThemeProvider>
+      <Box
+        sx={{
+          mt: '-16px',
+        }}
+      >
+        <Stack spacing={2} sx={{ p: 2, pt: 0 }}>
+          <UserLink user={user} />
           {illust.history.extension.title && (
             <Typography
               variant="h5"
@@ -248,58 +419,43 @@ export const ImageViewer = ({
               {illust.history.extension.title}
             </Typography>
           )}
-        </Stack>
-      </ThemeProvider>
-      {/* <Stack spacing={2}>
-        {userHistory && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Avatar
-              src={
-                userHistory.extension.avatar_url &&
-                srcByPath(userHistory.extension.avatar_url)
-              }
-            >
-              {userHistory.extension.name[0]}
-            </Avatar>
-            <Typography>{userHistory.extension.name}</Typography>
-          </Box>
-        )}
-      </Stack> */}
-      <Stack spacing={2} sx={{ p: 2, pt: 0, mt: -2 }}>
-        {cleanCaptionHtml && (
-          <Typography
-            variant="body2"
-            sx={{
-              '& a': {
-                color: 'inherit',
-              },
-            }}
-          >
-            <span dangerouslySetInnerHTML={{ __html: cleanCaptionHtml }} />
-          </Typography>
-        )}
-        <Stack spacing={2} alignItems="center">
-          {images.map((i) => (
-            <A
-              href={i.original}
-              target="_blank"
-              key={i.original}
+          {cleanCaptionHtml && (
+            <Typography
+              variant="body2"
               sx={{
-                display: 'flex',
+                '& a': {
+                  color: 'inherit',
+                },
               }}
             >
-              <Img
-                src={i.large}
+              <div dangerouslySetInnerHTML={{ __html: cleanCaptionHtml }} />
+            </Typography>
+          )}
+          {/* <Collapse in={commentsOpen}>{comments}</Collapse> */}
+
+          <Stack spacing={2} alignItems="center">
+            {images.map((i) => (
+              <A
+                href={i.original}
+                target="_blank"
+                key={i.original}
                 sx={{
-                  maxWidth: 1,
-                  maxHeight: '80vh',
+                  display: 'flex',
                 }}
-                title="Click to view original image"
-              />
-            </A>
-          ))}
+              >
+                <Img
+                  src={i.large}
+                  sx={{
+                    maxWidth: 1,
+                    maxHeight: '80vh',
+                  }}
+                  title="Click to view original image"
+                />
+              </A>
+            ))}
+          </Stack>
         </Stack>
-      </Stack>
+      </Box>
     </Container>
   )
 }

@@ -4,18 +4,7 @@ import { PixivIllust } from '../../model/pixiv'
 import { Img } from '../styledEl'
 import { ImageViewer } from './ImageViewer'
 import { useZoomStore } from '../../utils/store'
-
-export const srcByPath = (
-  path?: string | null,
-  size?: number,
-  crop_to_center = true
-) =>
-  size
-    ? `/api/v2/pixiv/thumbnail/${path}?${new URLSearchParams({
-        size: size.toString(),
-        crop_to_center: crop_to_center.toString(),
-      })}`
-    : `/api/v2/pixiv/storage/${path}`
+import { srcByPath } from '../../utils/network'
 
 const PageCount = ({ pageCount }: { pageCount: number }) =>
   pageCount > 1 ? (

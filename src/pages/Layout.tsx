@@ -1,5 +1,6 @@
 import {
   AppBar,
+  Avatar,
   Box,
   Collapse,
   Drawer,
@@ -209,6 +210,22 @@ export const Layout = () => {
       </Toolbar>
       <List dense>
         <Stack spacing={2}>
+          <ListItem disablePadding>
+            <ListItemButton>
+              <Stack
+                spacing={2}
+                direction="row"
+                alignItems="center"
+                sx={{
+                  mt: 1,
+                  mb: 1,
+                }}
+              >
+                <Avatar>You</Avatar>
+                <Typography>You</Typography>
+              </Stack>
+            </ListItemButton>
+          </ListItem>
           <ListItem disablePadding>
             <ListItemButton
               selected={currentCollection === null}

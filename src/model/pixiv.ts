@@ -21,9 +21,9 @@ export interface PixivUserHistory {
   twitter_account?: string
   web_page?: string
   workspace?: Record<string, string>
-  workspace_image_url?: string
-  background_url?: string
-  avatar_url?: string
+  // workspace_image_url?: string
+  background_path?: string
+  avatar_path?: string
 }
 
 export interface PixivWorksExt {
@@ -53,5 +53,5 @@ import { Item } from './base'
 
 export type PixivIllust = Item<PixivWorksExt, PixivIllustHistory>
 export type PixivNovel = Item<PixivWorksExt, PixivNovelHistory>
-export type PixivUser = Item<PixivUser, PixivUserHistory>
+export type PixivUser = Item<PixivUserExt, PixivUserHistory>
 // export type PixivImage = LocalMedia<ImageMedia>
