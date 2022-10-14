@@ -1,9 +1,9 @@
 import { CssBaseline, ThemeProvider, useMediaQuery } from '@mui/material'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import { FindPixivIllust } from './pages/pixiv/Find'
+import { GridView } from './components/GridView'
 import { Layout } from './pages/Layout'
 import { NotFound } from './pages/NotFound'
-import { User as User } from './pages/pixiv/User'
+import { UserPage } from './pages/pixiv/user'
 
 import { darkTheme, lightTheme } from './theme'
 
@@ -15,12 +15,11 @@ const App = () => {
       <CssBaseline />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<FindPixivIllust />} />
-            {/* <Route path="pixiv" element={<FindPixivIllust />} /> */}
-            <Route path="pixiv/user/:id" element={<User />} />
+          <Route path='/' element={<Layout />}>
+            <Route index element={<GridView />} />
+            <Route path='pixiv/user/:id' element={<UserPage />} />
           </Route>
-          <Route path="*" element={<NotFound />} />
+          <Route path='*' element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

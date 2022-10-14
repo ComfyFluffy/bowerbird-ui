@@ -4,6 +4,7 @@ import {
   Box,
   Collapse,
   Drawer,
+  DrawerProps,
   Fade,
   IconButton,
   List as MuiList,
@@ -24,10 +25,8 @@ import {
 import { Outlet } from 'react-router-dom'
 import MenuIcon from '@mui/icons-material/Menu'
 import { ReactNode, useEffect, useState } from 'react'
-import ZoomInIcon from '@mui/icons-material/ZoomIn'
-import ZoomOutIcon from '@mui/icons-material/ZoomOut'
 import { Stack } from '@mui/system'
-import { useCollectionStore, useZoomStore } from '../utils/store'
+import { useCollectionStore } from '../utils/store'
 import shallow from 'zustand/shallow'
 import CollectionsIcon from '@mui/icons-material/Collections'
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
@@ -124,7 +123,7 @@ const CollaspeListItems = ({
             </Typography>
           </ListItemText>
           <KeyboardArrowRightIcon
-            color="primary"
+            color='primary'
             sx={{
               pb: '2px',
               transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -138,33 +137,20 @@ const CollaspeListItems = ({
   )
 }
 
-export const Layout = () => {
-  const theme = useTheme()
-  const upLg = useMediaQuery(theme.breakpoints.up('lg'))
-
-  const [drawerOpen, setDrawerOpen] = useState(upLg)
-
-  useEffect(() => {
-    setDrawerOpen(upLg)
-  }, [upLg])
-
-  const handleSwitchDrawer = () => {
-    setDrawerOpen(!drawerOpen)
-  }
-
-  const [zoomLevel, zoomIn, zoomOut] = useZoomStore(
-    (state) => [state.zoomLevel, state.zoomIn, state.zoomOut],
-    shallow
-  )
-
-  const [currentCollection, setCurrentCollection] = useCollectionStore(
-    (state) => [state.current, state.setCurrent]
-  )
+const Bar = ({
+  showDrawerSwitch,
+  onDrawerSwitchClick,
+}: {
+  showDrawerSwitch: boolean
+  onDrawerSwitchClick: () => void
+}) => {
   const onTop = useOnTop(() => window)
-  const appBar = (
+  const theme = useTheme()
+
+  return (
     <ThemeProvider theme={onTop ? theme : darkTheme}>
       <AppBar
-        position="fixed"
+        position='fixed'
         sx={{
           boxShadow: 'none',
           pointerEvents: 'none',
@@ -184,27 +170,46 @@ export const Layout = () => {
             },
           }}
         >
-          <Fade in={!drawerOpen}>
-            <IconButton edge="start" onClick={handleSwitchDrawer}>
+          <Fade in={showDrawerSwitch}>
+            <IconButton edge='start' onClick={onDrawerSwitchClick}>
               <MenuIcon />
             </IconButton>
           </Fade>
-          <Box sx={{ flexGrow: 1 }} />
-          <IconButton onClick={zoomIn} disabled={zoomLevel <= -1}>
-            <ZoomInIcon />
-          </IconButton>
-          <IconButton onClick={zoomOut} disabled={zoomLevel >= 3}>
-            <ZoomOutIcon />
-          </IconButton>
         </Toolbar>
       </AppBar>
     </ThemeProvider>
   )
+}
 
-  const drawer = (
-    <Box>
+const DrawerNav = ({
+  open,
+  setOpen,
+  variant,
+}: {
+  open: boolean
+  setOpen: (value: boolean) => void
+} & Pick<DrawerProps, 'variant'>) => {
+  const [currentCollection, setCurrentCollection] = useCollectionStore(
+    (state) => [state.current, state.setCurrent]
+  )
+
+  return (
+    <Drawer
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: drawerWidth,
+          boxSizing: 'border-box',
+        },
+      }}
+      open={open}
+      onClose={() => setOpen(false)}
+      variant={variant}
+      anchor='left'
+    >
       <Toolbar>
-        <IconButton onClick={handleSwitchDrawer} edge="start">
+        <IconButton onClick={() => setOpen(!open)} edge='start'>
           <MenuIcon />
         </IconButton>
       </Toolbar>
@@ -214,8 +219,8 @@ export const Layout = () => {
             <ListItemButton>
               <Stack
                 spacing={2}
-                direction="row"
-                alignItems="center"
+                direction='row'
+                alignItems='center'
                 sx={{
                   mt: 1,
                   mb: 1,
@@ -252,31 +257,32 @@ export const Layout = () => {
           />
         </Stack>
       </List>
-    </Box>
+    </Drawer>
   )
+}
+
+export const Layout = () => {
+  const theme = useTheme()
+  const upLg = useMediaQuery(theme.breakpoints.up('lg'))
+
+  const [drawerOpen, setDrawerOpen] = useState(upLg)
+
+  useEffect(() => {
+    setDrawerOpen(upLg)
+  }, [upLg])
 
   return (
-    <Stack direction="row">
-      <Drawer
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-          },
-        }}
+    <Stack direction='row'>
+      <DrawerNav
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        setOpen={setDrawerOpen}
         variant={upLg ? 'persistent' : 'temporary'}
-        anchor="left"
-      >
-        {drawer}
-      </Drawer>
-
+      />
       <Main open={upLg ? drawerOpen : true}>
-        {appBar}
-
+        <Bar
+          onDrawerSwitchClick={() => setDrawerOpen(!drawerOpen)}
+          showDrawerSwitch={!drawerOpen}
+        />
         <Outlet />
       </Main>
     </Stack>

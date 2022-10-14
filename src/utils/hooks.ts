@@ -1,20 +1,23 @@
 import { useEffect, useState } from 'react'
 
 type ScrollElement =
-  | {
-      addEventListener: Element['addEventListener']
-      removeEventListener: Element['removeEventListener']
+  | ({
       scrollY?: number
       scrollTop?: number
-    }
+    } & Pick<Element, 'addEventListener' | 'removeEventListener'>)
   | null
   | undefined
 
-export const useOnTop = (e: () => ScrollElement): boolean => {
+/**
+ *
+ * @param element A function returning the element to listen to scroll event.
+ * @returns Whether the element is scrolled to the bottom.
+ */
+export const useOnTop = (element: () => ScrollElement): boolean => {
   const [onTop, setOnTop] = useState(true)
 
   useEffect(() => {
-    const el = e()
+    const el = element()
     if (!el) {
       console.log('useOnTop', el)
       return

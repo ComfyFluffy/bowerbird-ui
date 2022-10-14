@@ -12,8 +12,8 @@ export const NotFound = () => {
         flexDirection: 'column',
       }}
     >
-      <Typography variant="h1">404</Typography>
-      <Typography variant="h2">Not Found</Typography>
+      <Typography variant='h1'>404</Typography>
+      <Typography variant='h2'>Not Found</Typography>
     </Box>
   )
 }

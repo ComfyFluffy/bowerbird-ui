@@ -22,7 +22,7 @@ export interface Item<E, H> {
   inserted_at: string
   updated_at: string
   history: History<H>
-  extension?: E
+  extension: E
 }
 
 export interface History<H> {
@@ -35,7 +35,12 @@ export interface Tag {
   alias: string[]
 }
 
-export interface ItemsResponse<T> {
-  items: T[]
-  total: number
+export type Source = 'pixiv'
+
+export interface GeneralUser {
+  source: Source
+  id: number
+  name: string
+  avatarUrl?: string
+  previewUrls?: string[]
 }

@@ -8,6 +8,7 @@ import {
   Container,
   FormControl,
   FormControlLabel,
+  IconButton,
   Pagination,
   Radio,
   RadioGroup,
@@ -19,15 +20,28 @@ import {
 } from '@mui/material'
 import { LocalizationProvider, DateTimePicker } from '@mui/lab'
 import AdapterDateFns from '@mui/lab/AdapterDateFns'
-import { useEffect, useRef, useState } from 'react'
-import { ItemsResponse, Tag } from '../../../model/base'
-import { PixivIllust, PixivUser } from '../../../model/pixiv'
-import { ImgGrid } from '../../../components/pixiv/ImageGrid'
-import { usePost } from '../../../utils/network'
-import axios from 'axios'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import FilterListIcon from '@mui/icons-material/FilterList'
-import { useCollectionStore, useRatingStore } from '../../../utils/store'
+import ZoomOutIcon from '@mui/icons-material/ZoomOut'
+import ZoomInIcon from '@mui/icons-material/ZoomIn'
+
+import { Tag } from '../../model/base'
+import { PixivIllust, PixivUser } from '../../model/pixiv'
+import { srcByPath, usePost } from '../../utils/network'
+import {
+  useCollectionStore,
+  useRatingStore,
+  useZoomStore,
+} from '../../utils/store'
 import shallow from 'zustand/shallow'
+import { ImgGrid, ImgGridProps } from './ImgGrid'
+import {
+  pixivBase,
+  PixivIllustFindOptions,
+  usePixivIllustFind,
+} from '../../utils/pixiv'
+import { DialogViewer } from './DialogViewer'
+
 interface AutocompleteProps<T> {
   value: T[]
   onChange: (newValue: T[]) => void
@@ -36,11 +50,11 @@ interface AutocompleteProps<T> {
 const AutocompleteTags = ({ value, onChange }: AutocompleteProps<Tag>) => {
   return (
     <AutocompleteOnTyping
-      url="/api/v2/pixiv/find/tag"
+      url={pixivBase + 'find/tag'}
       value={value}
       onChange={onChange}
-      label="Tags"
-      placeholder="Tags"
+      label='Tags'
+      placeholder='Tags'
       isOptionEqualToValue={(a, b) => a.id === b.id}
       getOptionLabel={(option) => option.alias.join(' / ')}
     />
@@ -53,11 +67,11 @@ const AutocompleteUsers = ({
 }: AutocompleteProps<PixivUser>) => {
   return (
     <AutocompleteOnTyping
-      url="/api/v2/pixiv/user/find"
+      url='/api/v2/pixiv/user/find'
       value={value}
       onChange={onChange}
-      label="Users"
-      placeholder="Users"
+      label='Users'
+      placeholder='Users'
       isOptionEqualToValue={(a, b) => a.id === b.id}
       getOptionLabel={(option) =>
         option.history ? option.history.extension.name : option.source_id
@@ -97,7 +111,7 @@ const AutocompleteOnTyping = <T,>({
           {...params}
           label={label}
           placeholder={placeholder}
-          size="small"
+          size='small'
         />
       )}
       loading={!data && search !== ''}
@@ -156,8 +170,8 @@ const NumberRangePicker = ({
           setStart(e.target.value)
           onChange({ start: +e.target.value || 0, end: +end || 0 })
         }}
-        type="number"
-        size="small"
+        type='number'
+        size='small'
       />
       <TextField
         label={`${label} To`}
@@ -166,8 +180,8 @@ const NumberRangePicker = ({
           setEnd(e.target.value)
           onChange({ start: +start || 0, end: +e.target.value || 0 })
         }}
-        type="number"
-        size="small"
+        type='number'
+        size='small'
       />
     </Box>
   )
@@ -187,7 +201,7 @@ const DateRangePicker = ({
         <DateTimePicker
           clearable
           renderInput={(props: any) => <TextField {...props} />}
-          label="Date From"
+          label='Date From'
           value={start}
           onChange={(newValue: Date | null) => {
             setStart(newValue)
@@ -197,7 +211,7 @@ const DateRangePicker = ({
         <DateTimePicker
           clearable
           renderInput={(props: any) => <TextField {...props} />}
-          label="Date To"
+          label='Date To'
           value={end}
           onChange={(newValue: Date | null) => {
             setEnd(newValue)
@@ -227,7 +241,7 @@ const SortByPicker = ({
       <Autocomplete
         options={defaultSortOptions}
         renderInput={(params) => (
-          <TextField {...params} label="Sort By" sx={{ width: 1 }} />
+          <TextField {...params} label='Sort By' sx={{ width: 1 }} />
         )}
         onChange={(_, k) => {
           setKey(k)
@@ -240,8 +254,8 @@ const SortByPicker = ({
       />
       <FormControl>
         <RadioGroup
-          aria-labelledby="demo-controlled-radio-buttons-group"
-          name="controlled-radio-buttons-group"
+          aria-labelledby='demo-controlled-radio-buttons-group'
+          name='controlled-radio-buttons-group'
           value={ordering}
           row
           onChange={(e) => {
@@ -253,35 +267,54 @@ const SortByPicker = ({
               })
           }}
         >
-          <FormControlLabel value="asc" control={<Radio />} label="Asc" />
-          <FormControlLabel value="desc" control={<Radio />} label="Desc" />
+          <FormControlLabel value='asc' control={<Radio />} label='Asc' />
+          <FormControlLabel value='desc' control={<Radio />} label='Desc' />
         </RadioGroup>
       </FormControl>
     </Box>
   )
 }
 
-export const FindPixivIllust = () => {
-  const limit = 50
+const ZoomController = () => {
+  const [zoomLevel, zoomIn, zoomOut] = useZoomStore(
+    (state) => [state.zoomLevel, state.zoomIn, state.zoomOut],
+    shallow
+  )
 
-  const [tags, setTags] = useState([] as Tag[])
-  const [users, setUsers] = useState([] as PixivUser[])
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  // const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
-  //   null,
-  //   null,
-  // ])
-  const [bookmarkRange, setBookmarkRange] = useState<
-    [number | null, number | null]
-  >([null, null])
-  // const [sort, setSort] = useState<SortOptions>({ _id: -1 })
-  const [data, setData] = useState<PixivIllust[]>()
-  const [total, setTotal] = useState(0)
+  return (
+    <Stack direction='row' alignItems='center'>
+      <IconButton onClick={zoomIn} disabled={zoomLevel <= -1}>
+        <ZoomInIcon />
+      </IconButton>
+      <IconButton onClick={zoomOut} disabled={zoomLevel >= 3}>
+        <ZoomOutIcon />
+      </IconButton>
+    </Stack>
+  )
+}
 
-  const [rating, setRating] = useState<number | null>(null)
+export const GridView = () => {
+  const [tags, setTagsOrig] = useState<Tag[]>([])
+  const [users, setUsersOrig] = useState<PixivUser[]>([])
+  const setTags = (v: Tag[]) => {
+    setFilter({
+      ...filter,
+      tag_ids: v.map((t) => t.id),
+    })
+    setTagsOrig(v)
+  }
+  const setUsers = (v: PixivUser[]) => {
+    setFilter({
+      ...filter,
+      parent_ids: v.map((u) => u.id),
+    })
+    setUsersOrig(v)
+  }
 
   const [showFilter, setShowFilter] = useState(false)
+  const [rating, setRating] = useState<number | null>(null)
+  const [filter, setFilter] = useState<PixivIllustFindOptions>({})
+  const [page, setPage] = useState(1)
 
   const imgGridRef = useRef<HTMLDivElement>(null)
 
@@ -291,87 +324,66 @@ export const FindPixivIllust = () => {
     (s) => [s.collections, s.current],
     shallow
   )
-
   useEffect(() => {
-    setData(undefined)
+    if (currentCollection) {
+      setFilter({
+        ...filter,
+        ids: collections[currentCollection],
+      })
+    }
+  }, [collections, currentCollection])
 
-    const tagIds = tags.map((t) => t.id)
-    tagIds.push(154)
-    ;(async () => {
-      const r = await axios.post<ItemsResponse<PixivIllust>>(
-        '/api/v2/pixiv/illust/find',
-        {
-          tags: tagIds.length ? tagIds : null,
-          search: search || null,
-          // date_range: dateRange,
-          bookmark_range: [bookmarkRange[0] || null, bookmarkRange[1] || null],
-          ids:
-            currentCollection === null ? null : collections[currentCollection],
-          // sort_by: sort,
-          parent_ids: users.map((u) => u.id),
-          offset: (page - 1) * limit,
-          limit,
-          tags_exclude: [13],
-        }
-      )
-      setData(
-        rating
-          ? r.data.items.filter((v) => ratingById[v.id] === rating)
-          : r.data.items
-      )
-      setTotal(Math.floor(r.data.total / limit) + 1)
-    })()
-  }, [
-    tags,
-    search,
-    // dateRange,
-    bookmarkRange,
-    // sort,
-    users,
-    rating,
-    currentCollection,
-    page,
-  ])
-  const filter = (
-    <Stack spacing={2} sx={{ alignItems: 'center', width: 1 }}>
-      <AutocompleteTags
-        value={tags}
-        onChange={(t) => {
-          setTags(t)
-        }}
-      />
-      <AutocompleteUsers
-        value={users}
-        onChange={(u) => {
-          setUsers(u)
-        }}
-      />
-      <TextField
-        placeholder="Search"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ maxWidth: 592, width: 0.95 }}
-        size="small"
-      />
-      {/* <DateRangePicker onChange={(ra) => setDateRange([ra.start, ra.end])} /> */}
-      <NumberRangePicker
-        onChange={(newValue) =>
-          setBookmarkRange([newValue.start, newValue.end])
-        }
-        label="Bookmark"
-      />
-      <Rating
-        title="Rating"
-        value={rating}
-        onChange={(_, v) => {
-          setRating(v)
-        }}
-      />
-    </Stack>
+  const [currentIllust, setCurrentIllust] = useState<PixivIllust | null>(null)
+
+  const { data } = usePixivIllustFind(
+    {
+      ...filter,
+      tag_ids: [...(filter.tag_ids || []), 154],
+      tag_ids_exclude: [13, 133],
+    },
+    page
   )
+
+  const imgGridItems = useMemo(() => {
+    return data?.items
+      .filter(
+        ({
+          id,
+          history: {
+            extension: { image_paths },
+          },
+        }) =>
+          image_paths?.length && (rating === null || ratingById[id] === rating)
+      )
+      .map((illust): ImgGridProps['items'][0] => {
+        const {
+          id,
+          history: {
+            extension: { image_paths, title },
+          },
+        } = illust
+        return {
+          id,
+          count: image_paths!.length,
+          imgSrc: srcByPath('pixiv', image_paths?.[0], 512),
+          title,
+          onClick: () => {
+            setCurrentIllust(illust)
+          },
+        }
+      })
+  }, [data])
 
   return (
     <Container maxWidth={false} sx={{ pt: 8 }}>
+      <Stack direction='row'>
+        <Box sx={{ flexGrow: 1 }} />
+        <ZoomController />
+      </Stack>
+      <DialogViewer
+        illust={currentIllust}
+        onClose={() => setCurrentIllust(null)}
+      />
       <Stack spacing={2} sx={{ alignItems: 'center' }}>
         <Stack
           sx={{
@@ -385,10 +397,40 @@ export const FindPixivIllust = () => {
           >
             Filter
           </Button>
-          <Collapse in={showFilter}>{filter}</Collapse>
+          <Collapse in={showFilter}>
+            <Stack spacing={2} alignItems='center'>
+              <AutocompleteTags value={tags} onChange={setTags} />
+              <AutocompleteUsers value={users} onChange={setUsers} />
+              <TextField
+                placeholder='Search'
+                value={filter.search}
+                onChange={(e) =>
+                  setFilter({ ...filter, search: e.target.value })
+                }
+                sx={{ maxWidth: 592, width: 0.95 }}
+                size='small'
+              />
+              <NumberRangePicker
+                onChange={(newValue) =>
+                  setFilter({
+                    ...filter,
+                    bookmark_range: [newValue.start, newValue.end],
+                  })
+                }
+                label='Bookmark'
+              />
+              <Rating
+                title='Rating'
+                value={rating}
+                onChange={(_, v) => {
+                  setRating(v)
+                }}
+              />
+            </Stack>
+          </Collapse>
         </Stack>
         {data ? (
-          data.length ? (
+          imgGridItems?.length ? (
             <>
               <Box
                 ref={imgGridRef}
@@ -396,20 +438,18 @@ export const FindPixivIllust = () => {
                   width: 1,
                 }}
               >
-                <ImgGrid illusts={data} />
+                {<ImgGrid items={imgGridItems} />}
               </Box>
-              {total > limit && (
-                <Pagination
-                  count={total}
-                  color="secondary"
-                  page={page}
-                  onChange={(_, page) => {
-                    setPage(page)
-                    imgGridRef.current?.scrollIntoView()
-                  }}
-                  sx={{ mb: 2, mt: 2 }}
-                />
-              )}
+              <Pagination
+                count={data.total}
+                color='secondary'
+                page={page}
+                onChange={(_, page) => {
+                  setPage(page)
+                  imgGridRef.current?.scrollIntoView()
+                }}
+                sx={{ mb: 2, mt: 2 }}
+              />
             </>
           ) : (
             <Box>No result</Box>
