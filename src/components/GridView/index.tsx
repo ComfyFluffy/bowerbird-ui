@@ -43,7 +43,7 @@ interface AutocompleteProps<T> {
 const AutocompleteTags = ({ value, onChange }: AutocompleteProps<Tag>) => {
   return (
     <AutocompleteOnTyping
-      url={pixivBase + 'find/tag'}
+      url={pixivBase + 'tag/find'}
       value={value}
       onChange={onChange}
       label='Tags'
