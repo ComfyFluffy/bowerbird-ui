@@ -4,11 +4,13 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogProps,
   inputClasses,
   Paper,
   Rating,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material'
 import { DialogPaper, Img } from './etc'
 import ImageUploading, {
@@ -56,8 +58,16 @@ const Uploader: ImageUploadingPropsType['children'] = ({
             }`,
             borderRadius: 1,
           })}
+          spacing={1}
         >
           <FileUploadIcon fontSize='large' />
+          <Typography
+            sx={{
+              opacity: 0.7,
+            }}
+          >
+            Drag and drop or click to upload
+          </Typography>
         </Stack>
       </Stack>
 
@@ -74,8 +84,8 @@ const Uploader: ImageUploadingPropsType['children'] = ({
           <Img
             key={
               image.file
-                ? image.file.name + image.file.size
-                : image.dataURL?.slice(0, 100)
+                ? image.file.name + image.file.size + index
+                : image.dataURL?.slice(0, 100) || '' + index
             }
             src={image.dataURL}
             sx={{
@@ -108,7 +118,12 @@ export const UploadDialog = ({
     <Dialog
       maxWidth='md'
       open={open}
-      onClose={onClose}
+      onClose={() => {
+        if (title || caption || images.length) {
+          return
+        }
+        onClose()
+      }}
       PaperComponent={DialogPaper}
       fullWidth
     >
@@ -146,8 +161,8 @@ export const UploadDialog = ({
             setPosting(true)
             setTimeout(() => {
               setPosting(false)
+              onClose()
             }, 1000)
-            onClose()
           }}
           disabled={posting}
           loading={posting}

@@ -101,9 +101,11 @@ export const useRatingStore = create<RatingStore>()(
 )
 
 export interface UiStore {
-  toolbarType: 'gridViewer' | null
+  toolbarType: 'zoom' | 'upload' | null
   setToolbarType: (type: UiStore['toolbarType']) => void
 }
+
+// TODO: toolbar for each page
 
 export const useUiStore = create<UiStore>()(
   immer((set) => ({

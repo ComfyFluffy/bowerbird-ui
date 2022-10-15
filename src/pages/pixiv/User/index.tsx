@@ -76,14 +76,14 @@ const User = ({
 }
 
 const UserPageParsed = ({ id }: { id: number }) => {
-  useToolbarType('gridViewer')
+  useToolbarType('zoom')
 
   const { data, error } = usePixivUserFind({ ids: [id] }, 1, 1)
   if (error) {
     return <Typography variant='h5'>{error.message}</Typography>
   }
   if (!data) {
-    return <CircularProgress />
+    return null
   }
 
   const user = data.items[0]

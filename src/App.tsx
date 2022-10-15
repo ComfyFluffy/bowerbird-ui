@@ -8,6 +8,29 @@ import { PixivPage } from './pages/pixiv'
 
 import { darkTheme, lightTheme } from './theme'
 
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+)
+
 const App = () => {
   const isDark = useMediaQuery('(prefers-color-scheme: dark)')
 

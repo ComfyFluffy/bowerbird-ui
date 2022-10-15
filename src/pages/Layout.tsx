@@ -22,7 +22,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
-import { Outlet } from 'react-router-dom'
+import { Link as RouterLink, Outlet, useNavigate } from 'react-router-dom'
 import MenuIcon from '@mui/icons-material/Menu'
 import { ReactNode, useEffect, useState } from 'react'
 import { Stack } from '@mui/system'
@@ -35,7 +35,6 @@ import ZoomOutIcon from '@mui/icons-material/ZoomOut'
 import ZoomInIcon from '@mui/icons-material/ZoomIn'
 import { darkTheme } from '../theme'
 import { useOnTop } from '../utils/hooks'
-
 const drawerWidth = 34 * 8
 
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
@@ -180,18 +179,26 @@ const Bar = ({
           }}
         >
           <Fade in={showDrawerSwitch}>
-            <IconButton edge='start' onClick={onDrawerSwitchClick}>
+            <IconButton edge='start' onClick={onDrawerSwitchClick} title='Menu'>
               <MenuIcon />
             </IconButton>
           </Fade>
 
           <Box sx={{ flexGrow: 1 }} />
-          {toolbarType === 'gridViewer' && (
+          {toolbarType === 'zoom' && (
             <>
-              <IconButton onClick={zoomIn} disabled={zoomLevel <= -1}>
+              <IconButton
+                onClick={zoomIn}
+                disabled={zoomLevel <= -1}
+                title='Zoom In'
+              >
                 <ZoomInIcon />
               </IconButton>
-              <IconButton onClick={zoomOut} disabled={zoomLevel >= 3}>
+              <IconButton
+                onClick={zoomOut}
+                disabled={zoomLevel >= 3}
+                title='Zoom Out'
+              >
                 <ZoomOutIcon />
               </IconButton>
             </>
@@ -213,6 +220,8 @@ const DrawerNav = ({
   const [currentCollection, setCurrentCollection] = useCollectionStore(
     (state) => [state.current, state.setCurrent]
   )
+
+  const nav = useNavigate() // FIXIT
 
   return (
     <Drawer
@@ -237,7 +246,7 @@ const DrawerNav = ({
       <List dense>
         <Stack spacing={2}>
           <ListItem disablePadding>
-            <ListItemButton>
+            <ListItemButton component={RouterLink} to='/'>
               <Stack
                 spacing={2}
                 direction='row'
@@ -254,8 +263,11 @@ const DrawerNav = ({
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton
+              onClick={() => {
+                setCurrentCollection(null)
+                nav('/pixiv')
+              }}
               selected={currentCollection === null}
-              onClick={() => setCurrentCollection(null)}
             >
               <ListItemIcon>
                 <CollectionsIcon />
