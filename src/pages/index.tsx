@@ -10,6 +10,7 @@ import {
   Unstable_Grid2 as Grid,
   Avatar,
   Link,
+  StackProps,
 } from '@mui/material'
 import { useState } from 'react'
 import { UploadDialog } from '../components/Upload'
@@ -75,8 +76,8 @@ const data = {
   ],
 }
 
-// NOTE: PaperProps & StackProps will cause the ts server entering a dead loop
-const DataPaper = styled((props: PaperProps) => (
+// NOTE: @mui/material/PaperProps & @mui/system/StackProps will cause the ts server entering a dead loop
+const DataPaper = styled((props: PaperProps & StackProps) => (
   <Paper elevation={2} component={Stack} spacing={2} {...props} />
 ))(({ theme }) => ({
   padding: theme.spacing(2),
@@ -128,7 +129,6 @@ const Index = () => {
           container
           spacing={2}
           columns={{
-            sm: 6,
             xs: 4,
             md: 12,
           }}
@@ -142,7 +142,20 @@ const Index = () => {
           <Grid xs={4}>
             <DataPaper>
               <Typography variant='h6'>Storage</Typography>
-              <Pie data={data} />
+              <Stack alignItems='center' justifyContent='center'>
+                <Stack
+                  sx={{
+                    width: 300,
+                  }}
+                >
+                  <Pie
+                    data={data}
+                    options={{
+                      responsive: true,
+                    }}
+                  />
+                </Stack>
+              </Stack>
               <Typography
                 sx={{
                   textAlign: 'center',
@@ -152,7 +165,7 @@ const Index = () => {
               </Typography>
             </DataPaper>
           </Grid>
-          <Grid xs={2}>
+          <Grid xs={4} md={2}>
             <DataPaper>
               <Typography variant='h5'>
                 <Link component={RouterLink} to='/pixiv'>
@@ -169,7 +182,7 @@ const Index = () => {
               <Grid
                 container
                 columns={{
-                  sm: 4,
+                  md: 4,
                   xs: 2,
                 }}
               >
@@ -205,7 +218,7 @@ const Index = () => {
                             {136 - i * 8} Works
                           </Typography>
                           <Typography variant='body2'>
-                            Like Rate: {String(92.8 - i * 2.9).slice(0, 4)}%
+                            Like Rate: {(92.8 - i * 2.9).toFixed(1)}%
                           </Typography>
                         </Stack>
                       </Stack>

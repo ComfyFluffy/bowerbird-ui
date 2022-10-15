@@ -16,6 +16,7 @@ import {
   Stack,
   TextField,
   ThemeProvider,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -166,12 +167,15 @@ const TagChips = ({ tags }: { tags: Tag[] }) => {
       flexWrap='wrap'
       gap={1} // use gap to add space between lines
     >
+      <Chip label='pixiv' color='primary' size='small' />
       {tags.map((tag) => (
-        <Chip
-          key={tag.id}
-          size='small'
-          label={tag.alias.slice(0, 3).join(' / ')}
-        />
+        <Tooltip title={tag.alias.join(' / ')}>
+          <Chip
+            key={tag.id}
+            size='small'
+            label={tag.alias.slice(0, 3).join(' / ')}
+          />
+        </Tooltip>
       ))}
     </Stack>
   )
@@ -290,12 +294,8 @@ export const Viewer = ({
           </Stack>
         </Stack>
       </ThemeProvider>
-      <Box
-        sx={{
-          mt: '-16px',
-        }}
-      >
-        <Stack spacing={2} sx={{ p: { md: 3, sm: 2, xs: 2 }, pt: 0 }}>
+      <Stack spacing={2}>
+        <Container maxWidth={false} component={Stack} spacing={2}>
           {user ? <UserLink user={user} tooltip /> : <UserLink.Skeleton />}
           {illust.history.extension.title && (
             <Typography
@@ -318,6 +318,11 @@ export const Viewer = ({
               count={illust.extension.total_bookmarks}
             />
           </Stack>
+          {illust.history.extension.date && (
+            <Typography variant='body2'>
+              {new Date(illust.history.extension.date).toLocaleString()}
+            </Typography>
+          )}
           {cleanCaptionHtml && (
             <Typography
               variant='body2'
@@ -331,30 +336,38 @@ export const Viewer = ({
             </Typography>
           )}
           {/* <Collapse in={commentsOpen}>{comments}</Collapse> */}
-
-          <Stack spacing={2} alignItems='center'>
-            {images.map((i) => (
-              <A
-                href={i.original}
-                target='_blank'
-                key={i.original}
+        </Container>
+        <Container
+          maxWidth={false}
+          component={Stack}
+          spacing={2}
+          sx={{
+            pb: { xs: 2, sm: 3 },
+            display: 'flex',
+          }}
+          alignItems='center'
+        >
+          {images.map((i) => (
+            <A
+              href={i.original}
+              target='_blank'
+              key={i.original}
+              sx={{
+                display: 'flex',
+              }}
+            >
+              <Img
+                src={i.large}
                 sx={{
-                  display: 'flex',
+                  maxWidth: 1,
+                  maxHeight: '80vh',
                 }}
-              >
-                <Img
-                  src={i.large}
-                  sx={{
-                    maxWidth: 1,
-                    maxHeight: '80vh',
-                  }}
-                  title='Click to view original image'
-                />
-              </A>
-            ))}
-          </Stack>
-        </Stack>
-      </Box>
+                title='Click to view original image'
+              />
+            </A>
+          ))}
+        </Container>
+      </Stack>
     </Container>
   )
 }

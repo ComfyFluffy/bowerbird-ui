@@ -35,7 +35,7 @@ export interface PixivIllustHistory {
   illust_type: string
   caption_html: string
   title: string
-  date?: Date
+  date?: string
   image_paths?: string[]
 }
 
