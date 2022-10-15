@@ -8,7 +8,7 @@ import {
   usePost,
 } from './network'
 import { PartialNull, PartialNullUndefinded } from './etc'
-import { GeneralUser } from '../model/base'
+import { GeneralUser, Tag } from '../model/base'
 
 export const pixivBase = apiBase + 'pixiv/'
 
@@ -33,8 +33,34 @@ export const usePixivIllustFind = (
   page = 1,
   perPage = 50
 ) => {
-  return usePost<ItemsResponse<PixivIllust>, PixivIllustFindOptions & Cursor>(
-    options ? pixivBase + 'illust/find' : null,
+  const { data, ...rest } = usePost<
+    ItemsResponse<PixivIllust>,
+    PixivIllustFindOptions & Cursor
+  >(options ? pixivBase + 'illust/find' : null, {
+    ...options,
+    ...computeCursor(page, perPage),
+  })
+  return {
+    data,
+    ...rest,
+    totalPages: data ? Math.ceil(data.total / perPage) : undefined,
+  }
+}
+
+export type PixivTagFindOptions = PartialNullUndefinded<{
+  ids: number[]
+  search: string
+}>
+
+// TODO: remove duplicated code
+
+export const usePixivTagFind = (
+  options?: PixivTagFindOptions,
+  page = 1,
+  perPage = 50
+) => {
+  return usePost<Tag[], PixivTagFindOptions & Cursor>(
+    options ? pixivBase + 'tag/find' : null,
     {
       ...options,
       ...computeCursor(page, perPage),

@@ -1,7 +1,12 @@
-import { Stack } from '@mui/material'
+import { Container, Stack } from '@mui/material'
+import { UploadDialog } from '../components/Upload'
 
 const Index = () => {
-  return <Stack></Stack>
+  return (
+    <Container>
+      <UploadDialog open={true} onClose={() => {}} />
+    </Container>
+  )
 }
 
 export default Index

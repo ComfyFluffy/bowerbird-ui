@@ -1,7 +1,6 @@
 import {
   Avatar,
   Box,
-  Button,
   Link,
   Paper,
   Skeleton,
@@ -20,7 +19,7 @@ const UserCard = ({ user }: { user: GeneralUser }) => {
 
   return (
     <Stack spacing={1} component={Paper} elevation={12} sx={{ p: 1 }}>
-      <UserLink user={user} followButton />
+      <UserLink user={user} />
       <Stack
         direction='row'
         sx={{
@@ -53,20 +52,20 @@ const StyledTooltip = styled(({ className, ...props }: TooltipProps) => (
 ))(() => ({
   [`& .${tooltipClasses.tooltip}`]: {
     padding: 0,
+    fontSize: 14,
   },
 }))
 export interface UserLinkProps {
   user: GeneralUser
-  followButton?: boolean // TODO: Remove Follow
   tooltip?: boolean
 }
 
-export const UserLink = ({ user, followButton, tooltip }: UserLinkProps) => {
+export const UserLink = ({ user, tooltip }: UserLinkProps) => {
   const tooltipFn = (children: ReactElement) => (
     <StyledTooltip title={<UserCard user={user} />}>{children}</StyledTooltip>
   )
 
-  const to = `/${user.source}}/user/${user.id}`
+  const to = `/${user.source}/user/${user.id}`
 
   const avatar = (
     <Avatar
@@ -81,28 +80,13 @@ export const UserLink = ({ user, followButton, tooltip }: UserLinkProps) => {
     </Avatar>
   )
   const name = (
-    <Link
-      underline='hover'
-      color='inherit'
-      sx={{
-        fontWeight: 600,
-      }}
-      component={RouterLink}
-      to={to}
-    >
+    <Link underline='hover' color='inherit' component={RouterLink} to={to}>
       {user.name}
     </Link>
   )
   return (
     <Stack spacing={2} direction='row' alignItems='center'>
-      <Stack
-        spacing={1}
-        direction='row'
-        alignItems='center'
-        sx={{
-          flex: followButton ? 1 : undefined,
-        }}
-      >
+      <Stack spacing={1} direction='row' alignItems='center'>
         {tooltip ? (
           <>
             {tooltipFn(avatar)}
@@ -115,7 +99,6 @@ export const UserLink = ({ user, followButton, tooltip }: UserLinkProps) => {
           </>
         )}
       </Stack>
-      {followButton && <Button size='small'>Unfollow</Button>}
     </Stack>
   )
 }

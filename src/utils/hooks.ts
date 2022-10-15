@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { UiStore, useUiStore } from './store'
 
 type ScrollElement =
   | ({
@@ -41,4 +42,16 @@ export const useOnTop = (element: () => ScrollElement): boolean => {
     return () => el.removeEventListener('scroll', onScroll)
   }, [onTop])
   return onTop
+}
+
+export const useToolbarType = (type: UiStore['toolbarType']) => {
+  const setToolbarType = useUiStore((s) => s.setToolbarType)
+
+  useEffect(() => {
+    setToolbarType(type)
+
+    return () => {
+      setToolbarType(null)
+    }
+  }, [])
 }

@@ -8,7 +8,6 @@ import {
   Container,
   FormControl,
   FormControlLabel,
-  IconButton,
   Pagination,
   Radio,
   RadioGroup,
@@ -22,17 +21,11 @@ import { LocalizationProvider, DateTimePicker } from '@mui/lab'
 import AdapterDateFns from '@mui/lab/AdapterDateFns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import FilterListIcon from '@mui/icons-material/FilterList'
-import ZoomOutIcon from '@mui/icons-material/ZoomOut'
-import ZoomInIcon from '@mui/icons-material/ZoomIn'
 
 import { Tag } from '../../model/base'
 import { PixivIllust, PixivUser } from '../../model/pixiv'
 import { srcByPath, usePost } from '../../utils/network'
-import {
-  useCollectionStore,
-  useRatingStore,
-  useZoomStore,
-} from '../../utils/store'
+import { useCollectionStore, useRatingStore } from '../../utils/store'
 import shallow from 'zustand/shallow'
 import { ImgGrid, ImgGridProps } from './ImgGrid'
 import {
@@ -275,25 +268,17 @@ const SortByPicker = ({
   )
 }
 
-const ZoomController = () => {
-  const [zoomLevel, zoomIn, zoomOut] = useZoomStore(
-    (state) => [state.zoomLevel, state.zoomIn, state.zoomOut],
-    shallow
-  )
-
-  return (
-    <Stack direction='row' alignItems='center'>
-      <IconButton onClick={zoomIn} disabled={zoomLevel <= -1}>
-        <ZoomInIcon />
-      </IconButton>
-      <IconButton onClick={zoomOut} disabled={zoomLevel >= 3}>
-        <ZoomOutIcon />
-      </IconButton>
-    </Stack>
-  )
+export interface GridViewProps {
+  defaultFilter?: PixivIllustFindOptions
+  disabledFilter?: {
+    user?: boolean
+  }
 }
 
-export const GridView = () => {
+export const GridView = ({
+  defaultFilter = {},
+  disabledFilter = {},
+}: GridViewProps) => {
   const [tags, setTagsOrig] = useState<Tag[]>([])
   const [users, setUsersOrig] = useState<PixivUser[]>([])
   const setTags = (v: Tag[]) => {
@@ -335,8 +320,9 @@ export const GridView = () => {
 
   const [currentIllust, setCurrentIllust] = useState<PixivIllust | null>(null)
 
-  const { data } = usePixivIllustFind(
+  const { data, totalPages } = usePixivIllustFind(
     {
+      ...defaultFilter,
       ...filter,
       tag_ids: [...(filter.tag_ids || []), 154],
       tag_ids_exclude: [13, 133],
@@ -375,11 +361,7 @@ export const GridView = () => {
   }, [data])
 
   return (
-    <Container maxWidth={false} sx={{ pt: 8 }}>
-      <Stack direction='row'>
-        <Box sx={{ flexGrow: 1 }} />
-        <ZoomController />
-      </Stack>
+    <Container maxWidth={false}>
       <DialogViewer
         illust={currentIllust}
         onClose={() => setCurrentIllust(null)}
@@ -400,7 +382,9 @@ export const GridView = () => {
           <Collapse in={showFilter}>
             <Stack spacing={2} alignItems='center'>
               <AutocompleteTags value={tags} onChange={setTags} />
-              <AutocompleteUsers value={users} onChange={setUsers} />
+              {disabledFilter.user ? null : (
+                <AutocompleteUsers value={users} onChange={setUsers} />
+              )}
               <TextField
                 placeholder='Search'
                 value={filter.search}
@@ -431,32 +415,30 @@ export const GridView = () => {
         </Stack>
         {data ? (
           imgGridItems?.length ? (
-            <>
-              <Box
-                ref={imgGridRef}
-                sx={{
-                  width: 1,
-                }}
-              >
-                {<ImgGrid items={imgGridItems} />}
-              </Box>
-              <Pagination
-                count={data.total}
-                color='secondary'
-                page={page}
-                onChange={(_, page) => {
-                  setPage(page)
-                  imgGridRef.current?.scrollIntoView()
-                }}
-                sx={{ mb: 2, mt: 2 }}
-              />
-            </>
+            <Box
+              ref={imgGridRef}
+              sx={{
+                width: 1,
+              }}
+            >
+              {<ImgGrid items={imgGridItems} />}
+            </Box>
           ) : (
             <Box>No result</Box>
           )
         ) : (
           <CircularProgress />
         )}
+        <Pagination
+          count={totalPages || 1}
+          color='secondary'
+          page={page}
+          onChange={(_, page) => {
+            setPage(page)
+            imgGridRef.current?.scrollIntoView()
+          }}
+          sx={{ mb: 2, mt: 2 }}
+        />
       </Stack>
     </Container>
   )

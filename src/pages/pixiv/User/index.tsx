@@ -1,15 +1,16 @@
 import {
   Avatar,
   Box,
-  Button,
   CircularProgress,
   Container,
   Stack,
   Typography,
 } from '@mui/material'
 import { useParams } from 'react-router-dom'
-import { Img } from '../../../components/styled'
+import { GridView } from '../../../components/GridView'
+import { Img } from '../../../components/etc'
 import { PixivUser } from '../../../model/pixiv'
+import { useToolbarType } from '../../../utils/hooks'
 import { srcByPath } from '../../../utils/network'
 import { usePixivUserFind } from '../../../utils/pixiv'
 
@@ -34,7 +35,7 @@ const User = ({
           <Img
             src={srcByPath('pixiv', background_path)}
             sx={{
-              maxHeight: '60vh',
+              maxHeight: '40vh',
               width: 1,
               borderRadius: 0,
               objectFit: 'cover',
@@ -51,12 +52,12 @@ const User = ({
           />
         </Box>
       )}
-      <Container>
+      <Container maxWidth='md'>
         <Stack spacing={2}>
           <Avatar
             src={srcByPath('pixiv', avatar_path)}
             sx={(t) => ({
-              mt: background_path ? '-64px' : undefined,
+              mt: background_path ? '-64px' : 8,
               width: 128,
               height: 128,
               border: `4px solid ${t.palette.background.paper}`,
@@ -65,8 +66,7 @@ const User = ({
             {name[0]}
           </Avatar>
           <Stack spacing={3} direction='row' alignItems='center'>
-            <Typography variant='h6'>{name}</Typography>
-            <Button>Unfollow</Button>
+            <Typography variant='h5'>{name}</Typography>
           </Stack>
           <Typography>{comment}</Typography>
         </Stack>
@@ -76,6 +76,8 @@ const User = ({
 }
 
 const UserPageParsed = ({ id }: { id: number }) => {
+  useToolbarType('gridViewer')
+
   const { data, error } = usePixivUserFind({ ids: [id] }, 1, 1)
   if (error) {
     return <Typography variant='h5'>{error.message}</Typography>
@@ -89,7 +91,19 @@ const UserPageParsed = ({ id }: { id: number }) => {
     return <Typography variant='h5'>User not found</Typography>
   }
 
-  return <User user={user} />
+  return (
+    <Stack spacing={4}>
+      <User user={user} />
+      <GridView
+        defaultFilter={{
+          parent_ids: [user.id],
+        }}
+        disabledFilter={{
+          user: true,
+        }}
+      />
+    </Stack>
+  )
 }
 
 export interface Params {

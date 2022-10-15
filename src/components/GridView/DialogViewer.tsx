@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Chip,
   Container,
   Dialog,
   DialogActions,
@@ -16,14 +17,24 @@ import {
   TextField,
   ThemeProvider,
   Typography,
+  useMediaQuery,
   useTheme,
 } from '@mui/material'
-import { A, Img } from '../styled'
+import { A, DialogPaper, Img } from '../etc'
 import { PixivIllust } from '../../model/pixiv'
-import { MouseEvent, useMemo, useRef, useState } from 'react'
+import {
+  ComponentProps,
+  FC,
+  MouseEvent,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import sanitizeHtml from 'sanitize-html'
 import CloseIcon from '@mui/icons-material/Close'
 import LibraryAddIcon from '@mui/icons-material/LibraryAdd'
+import FavoriteIcon from '@mui/icons-material/Favorite'
+import VisibilityIcon from '@mui/icons-material/Visibility'
 import { useCollectionStore, useRatingStore } from '../../utils/store'
 import shallow from 'zustand/shallow'
 import { darkTheme } from '../../theme'
@@ -31,7 +42,8 @@ import { useOnTop } from '../../utils/hooks'
 import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark'
 import { srcByPath } from '../../utils/network'
 import { UserLink } from '../User'
-import { usePixivGeneralUser } from '../../utils/pixiv'
+import { usePixivGeneralUser, usePixivTagFind } from '../../utils/pixiv'
+import { Tag } from '../../model/base'
 const AddToCollection = ({ illust }: { illust: PixivIllust }) => {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
   const menuOpen = Boolean(menuAnchor)
@@ -147,6 +159,46 @@ const AddToCollection = ({ illust }: { illust: PixivIllust }) => {
   )
 }
 
+const TagChips = ({ tags }: { tags: Tag[] }) => {
+  return (
+    <Stack
+      direction='row'
+      flexWrap='wrap'
+      gap={1} // use gap to add space between lines
+    >
+      {tags.map((tag) => (
+        <Chip
+          key={tag.id}
+          size='small'
+          label={tag.alias.slice(0, 3).join(' / ')}
+        />
+      ))}
+    </Stack>
+  )
+}
+
+const CountIndicator = ({
+  IconComponent,
+  count,
+}: {
+  IconComponent: FC<ComponentProps<typeof VisibilityIcon>>
+  count: number
+}) => {
+  return (
+    <Stack direction='row' spacing={0.5} alignItems='center'>
+      <IconComponent
+        sx={{
+          height: 16,
+          width: 16,
+        }}
+      />
+      <Typography variant='body2' component='span'>
+        {count.toLocaleString()}
+      </Typography>
+    </Stack>
+  )
+}
+
 export const Viewer = ({
   illust,
   onClose,
@@ -181,16 +233,12 @@ export const Viewer = ({
   const theme = useTheme()
 
   const { data: user } = usePixivGeneralUser(illust.parent_id)
+  const { data: tags } = usePixivTagFind({
+    ids: illust.tag_ids,
+  })
 
   return (
-    <Container
-      maxWidth='lg'
-      sx={{
-        padding: '0px !important',
-        height: 1,
-      }}
-      ref={containerRef}
-    >
+    <Container maxWidth='lg' disableGutters ref={containerRef}>
       <ThemeProvider theme={onTop ? theme : darkTheme}>
         <Stack
           sx={{
@@ -201,8 +249,8 @@ export const Viewer = ({
             top: 0,
             left: 0,
             right: 0,
-            p: 2,
-            pt: 0,
+            pl: 2,
+            pr: 2,
             '& *': {
               transition: 'color 50ms',
             },
@@ -247,7 +295,7 @@ export const Viewer = ({
           mt: '-16px',
         }}
       >
-        <Stack spacing={2} sx={{ p: 2, pt: 0 }}>
+        <Stack spacing={2} sx={{ p: { md: 3, sm: 2, xs: 2 }, pt: 0 }}>
           {user ? <UserLink user={user} tooltip /> : <UserLink.Skeleton />}
           {illust.history.extension.title && (
             <Typography
@@ -259,6 +307,17 @@ export const Viewer = ({
               {illust.history.extension.title}
             </Typography>
           )}
+          {tags && <TagChips tags={tags} />}
+          <Stack direction='row' spacing={2}>
+            <CountIndicator
+              IconComponent={VisibilityIcon}
+              count={illust.extension.total_view}
+            />
+            <CountIndicator
+              IconComponent={FavoriteIcon}
+              count={illust.extension.total_bookmarks}
+            />
+          </Stack>
           {cleanCaptionHtml && (
             <Typography
               variant='body2'
@@ -307,8 +366,24 @@ export const DialogViewer = ({
   illust: PixivIllust | null
   onClose: () => void
 }) => {
+  const theme = useTheme()
+  const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
+
   return (
-    <Dialog open={illust !== null} onClose={onClose} maxWidth='lg'>
+    <Dialog
+      open={illust !== null}
+      onClose={onClose}
+      maxWidth='lg'
+      fullScreen={fullScreen}
+      PaperComponent={DialogPaper}
+    >
+      <Box
+        sx={{
+          width: 800,
+          maxWidth: 1,
+          height: 0,
+        }}
+      />
       {illust && <Viewer illust={illust} onClose={onClose} />}
     </Dialog>
   )

@@ -2,7 +2,7 @@ import { Box, Typography } from '@mui/material'
 import Grid from '@mui/material/Unstable_Grid2'
 
 import { useZoomStore } from '../../utils/store'
-import { Img } from '../styled'
+import { Img } from '../etc'
 
 const Count = ({ count }: { count: number }) =>
   count > 1 ? (

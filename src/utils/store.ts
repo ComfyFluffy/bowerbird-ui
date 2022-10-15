@@ -99,3 +99,18 @@ export const useRatingStore = create<RatingStore>()(
     }
   )
 )
+
+export interface UiStore {
+  toolbarType: 'gridViewer' | null
+  setToolbarType: (type: UiStore['toolbarType']) => void
+}
+
+export const useUiStore = create<UiStore>()(
+  immer((set) => ({
+    toolbarType: null,
+    setToolbarType: (type) =>
+      set((state) => {
+        state.toolbarType = type
+      }),
+  }))
+)

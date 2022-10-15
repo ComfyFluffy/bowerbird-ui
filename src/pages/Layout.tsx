@@ -26,11 +26,13 @@ import { Outlet } from 'react-router-dom'
 import MenuIcon from '@mui/icons-material/Menu'
 import { ReactNode, useEffect, useState } from 'react'
 import { Stack } from '@mui/system'
-import { useCollectionStore } from '../utils/store'
+import { useCollectionStore, useUiStore, useZoomStore } from '../utils/store'
 import shallow from 'zustand/shallow'
 import CollectionsIcon from '@mui/icons-material/Collections'
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark'
+import ZoomOutIcon from '@mui/icons-material/ZoomOut'
+import ZoomInIcon from '@mui/icons-material/ZoomIn'
 import { darkTheme } from '../theme'
 import { useOnTop } from '../utils/hooks'
 
@@ -147,6 +149,13 @@ const Bar = ({
   const onTop = useOnTop(() => window)
   const theme = useTheme()
 
+  const [zoomLevel, zoomIn, zoomOut] = useZoomStore(
+    (state) => [state.zoomLevel, state.zoomIn, state.zoomOut],
+    shallow
+  )
+
+  const toolbarType = useUiStore((state) => state.toolbarType)
+
   return (
     <ThemeProvider theme={onTop ? theme : darkTheme}>
       <AppBar
@@ -175,6 +184,18 @@ const Bar = ({
               <MenuIcon />
             </IconButton>
           </Fade>
+
+          <Box sx={{ flexGrow: 1 }} />
+          {toolbarType === 'gridViewer' && (
+            <>
+              <IconButton onClick={zoomIn} disabled={zoomLevel <= -1}>
+                <ZoomInIcon />
+              </IconButton>
+              <IconButton onClick={zoomOut} disabled={zoomLevel >= 3}>
+                <ZoomOutIcon />
+              </IconButton>
+            </>
+          )}
         </Toolbar>
       </AppBar>
     </ThemeProvider>
