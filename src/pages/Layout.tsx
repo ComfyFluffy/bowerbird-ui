@@ -21,11 +21,11 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
+  Stack,
 } from '@mui/material'
 import { Link as RouterLink, Outlet, useNavigate } from 'react-router-dom'
 import MenuIcon from '@mui/icons-material/Menu'
 import { ReactNode, useEffect, useState } from 'react'
-import { Stack } from '@mui/system'
 import { useCollectionStore, useUiStore, useZoomStore } from '../utils/store'
 import shallow from 'zustand/shallow'
 import CollectionsIcon from '@mui/icons-material/Collections'

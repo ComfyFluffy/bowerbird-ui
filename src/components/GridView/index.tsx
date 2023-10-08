@@ -325,7 +325,7 @@ export const GridView = ({
       ...defaultFilter,
       ...filter,
       tag_ids: [...(filter.tag_ids || []), 154],
-      tag_ids_exclude: [13, 133],
+      // tag_ids_exclude: [13, 133],
     },
     page
   )

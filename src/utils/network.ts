@@ -38,7 +38,10 @@ const postFetcher = async <T>(url: string, body: string): Promise<T> => {
 }
 
 export const usePost = <T, B = any>(url: string | null, body: B) =>
-  useSWR<T>(url === null ? null : [url, JSON.stringify(body)], postFetcher)
+  useSWR<T>(url ? [url, JSON.stringify(body)] : null, (([url, body]: [
+    string,
+    string,
+  ]) => postFetcher(url, body)) as any)
 
 export interface Cursor {
   limit: number

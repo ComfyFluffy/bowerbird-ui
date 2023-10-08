@@ -168,17 +168,23 @@ const Index = () => {
           <Grid xs={4} md={2}>
             <DataPaper>
               <Typography variant='h5'>
-                <Link component={RouterLink} to='/pixiv'>
+                {/* <Link component={RouterLink} to='/pixiv'>
                   pixiv
-                </Link>
+                </Link> */}
               </Typography>
-              <Typography>Users: 3,002</Typography>
-              <Typography>Saved Works: 13,522</Typography>
+              <Stack>
+                <Typography variant='h5'>103</Typography>
+                <Typography>Followed Users</Typography>
+              </Stack>
+              <Stack>
+                <Typography variant='h5'>2502</Typography>
+                <Typography>Bookmarks</Typography>
+              </Stack>
             </DataPaper>
           </Grid>
           <Grid xs={10}>
             <DataPaper>
-              <Typography variant='h5'>Favorite users in pixiv</Typography>
+              <Typography variant='h5'>Favorite users</Typography>
               <Grid
                 container
                 columns={{
@@ -201,8 +207,8 @@ const Index = () => {
                         <Stack spacing={1} alignItems='center'>
                           <Avatar
                             sx={{
-                              width: 70,
-                              height: 70,
+                              width: 64,
+                              height: 64,
                             }}
                             src={srcByPath('pixiv', avatar_path)}
                           >
@@ -218,7 +224,8 @@ const Index = () => {
                             {136 - i * 8} Works
                           </Typography>
                           <Typography variant='body2'>
-                            Like Rate: {(92.8 - i * 2.9).toFixed(1)}%
+                            Like Rate:{' '}
+                            {(67.2 - Math.pow(i, 1.5) * 5.9).toFixed(1)}%
                           </Typography>
                         </Stack>
                       </Stack>
