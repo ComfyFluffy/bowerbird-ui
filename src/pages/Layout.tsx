@@ -120,7 +120,7 @@ const CollaspeListItems = ({
                 fontWeight: 600,
               }}
             >
-              COLLECTIONS
+              Collections
             </Typography>
           </ListItemText>
           <KeyboardArrowRightIcon
@@ -256,8 +256,8 @@ const DrawerNav = ({
                   mb: 1,
                 }}
               >
-                <Avatar>You</Avatar>
-                <Typography>You</Typography>
+                <Avatar>A</Avatar>
+                <Typography>Abc</Typography>
               </Stack>
             </ListItemButton>
           </ListItem>
@@ -278,7 +278,7 @@ const DrawerNav = ({
                     fontWeight: 600,
                   }}
                 >
-                  ALL
+                  All Bookmarks
                 </Typography>
               </ListItemText>
             </ListItemButton>
