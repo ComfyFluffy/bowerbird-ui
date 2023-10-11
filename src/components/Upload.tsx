@@ -4,7 +4,6 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogProps,
   inputClasses,
   Paper,
   Rating,

@@ -279,12 +279,6 @@ export const Viewer = ({
               spacing={2}
               sx={{ width: 1 }}
             >
-              <Rating
-                value={ratingById[illust.id] || null}
-                onChange={(_, v) => {
-                  setRating(illust.id, v)
-                }}
-              />
               <Box sx={{ flex: 1 }} />
               <AddToCollection illust={illust} />
               <IconButton onClick={onClose} title='Close'>
@@ -307,6 +301,12 @@ export const Viewer = ({
               {illust.history.extension.title}
             </Typography>
           )}
+          <Rating
+            value={ratingById[illust.id] || null}
+            onChange={(_, v) => {
+              setRating(illust.id, v)
+            }}
+          />
           {tags && <TagChips tags={tags} />}
           <Stack direction='row' spacing={2}>
             <CountIndicator
